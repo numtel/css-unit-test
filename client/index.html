@@ -50,11 +50,12 @@
       {{#if empty}}
         <p>Please log in and click on 'Create New Test' to begin.</p>
       {{/if}}
-      <ul class="nav nav-list">
+      <ul class="nav nav-list" id="tests-list">
         {{#each tests}}
           <li class="{{active}}"><a href="{{_id}}" data-id="{{_id}}">{{title}}</a></li>
         {{/each}}
       </ul>
+      {{renderSortable}}
     </div>
   {{/if}}
 </template>

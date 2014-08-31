@@ -27,11 +27,26 @@ Template.controls.showCreateDialog = function () {
   return Session.get("showCreateDialog");
 };
 
+Template.list.renderSortable = function(){
+  setTimeout(function(){
+    $('#tests-list').sortable({
+      handle: 'a',
+      stop: function(event, ui){
+        ui.item.parent().children().each(function(i){
+          var item = $(this),
+              id = item.children('a').attr('data-id');
+          TestCases.update(id, {$set: {rank: i}});
+        });
+      }
+    });
+  }, 10);
+};
+
 Template.list.loading = function () {
   return !testCasesHandle.ready();
 };
 Template.list.tests = function(){
-  return TestCases.find({}, {sort: {name: 1}});
+  return TestCases.find({}, {sort: {rank: 1}});
 };
 
 Template.list.empty = function(){

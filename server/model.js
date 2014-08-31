@@ -13,7 +13,7 @@ TestCases.allow({
     if (userId !== party.owner)
       return false; // not the owner
 
-    var allowed = ["title", "description", "x", "y"];
+    var allowed = ['rank', "title", "description", "x", "y"];
     if (_.difference(fields, allowed).length)
       return false; // tried to write to forbidden field
 
@@ -55,6 +55,7 @@ Meteor.methods({
     var id = options._id || Random.id();
     TestCases.insert({
       _id: id,
+      rank: 0,
       owner: this.userId,
       title: options.title,
       description: options.description,

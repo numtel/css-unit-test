@@ -10,4 +10,5 @@ accounts-password
 bootstrap
 underscore
 backbone
+mrt:jquery-ui
 

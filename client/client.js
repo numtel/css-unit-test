@@ -86,6 +86,28 @@ Template.details.test = function(){
   var result = TestCases.findOne(Session.get("selected"));
   if(result && result.history){
     result.history = result.history.reverse();
+    
+    var organizeBySelector = function(a){
+      var o = {};
+      a.forEach(function(failure){
+        if(!o.hasOwnProperty(failure['selector'])){
+          o[failure['selector']] = {
+            selector: failure['selector'],
+            instances: []
+          };
+        };
+        o[failure['selector']].instances.push(failure);
+      });
+      var sorted = [];
+      _.each(o, function(failure){
+        sorted.push(failure);
+      });
+      return sorted;
+    };
+
+    result.history.forEach(function(testStatus){
+      testStatus.failures = organizeBySelector(testStatus.failures);
+    });
   };
   return result;
 };
@@ -188,6 +210,7 @@ Template.modifyDialog.test = Template.deleteDialog.test = function(){
 
 Template.modifyDialog.events({
   'click .save': function (event, template) {
+    event.preventDefault();
     var title = template.find(".title").value,
         description = template.find(".description").value,
         cssFiles = template.find(".css-files").value,
@@ -223,8 +246,9 @@ Template.modifyDialog.events({
     }
   },
 
-  'click .cancel': function () {
+  'click .cancel': function (event) {
     Session.set("showModifyDialog", false);
+    event.preventDefault();
   }
 });
 
@@ -235,10 +259,12 @@ Template.modifyDialog.error = function () {
 
 Template.deleteDialog.events({
   'click .delete': function (event, template) {
+    event.preventDefault();
     TestCases.remove(this._id);
     Session.set("showDeleteDialog", false);
   },
-  'click .cancel': function () {
+  'click .cancel': function (event) {
+    event.preventDefault();
     Session.set("showDeleteDialog", false);
   }
 });

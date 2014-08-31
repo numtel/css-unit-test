@@ -1,5 +1,6 @@
 <head>
-  <title>CSS Unit Test</title>
+  <title>SteezTest.me</title>
+  <link href='http://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet' type='text/css'>
 </head>
 
 <body>
@@ -23,7 +24,7 @@
   <div class="navbar navbar-fixed-top">
     <div class="navbar-inner">
       <div class="container">
-        <a class="brand" href="#">CSS Unit Test</a>
+        <a class="brand" href="#">SteezTest.me</a>
         <ul class="nav">
           {{#if loggedIn}}
             <li>
@@ -50,6 +51,9 @@
         <div class="alert">Please click 'Create New Test' to begin.</div>
       {{/if}}
       <ul class="nav nav-list" id="tests-list">
+        <li class="nav-header">
+          Test Cases
+        </li>
         {{#each tests}}
           <li class="{{active}}"><a href="{{_id}}" data-id="{{_id}}">
             {{#if normative}}
@@ -93,41 +97,45 @@
         <iframe id="test-frame-{{_id}}"></iframe>
         {{fillFrame}}
         {{#if history}}
-          <h3>History</h3>
-          <ul>
-            {{#each history}}
-              <li>
-              {{#if passed}}
-                <span class="badge badge-success">
-                  <i class="icon-ok-circle"></i>
-                </span>
-                Passed on {{time}}
-              {{else}}
-                <span class="badge badge-warning">
-                  <i class="icon-fire"></i>
-                </span>
-                Failed on {{time}}
-                <ul>
-                  {{#each failures}}
-                    <li data-selector="{{selector}}">
-                      <a href="#" class="failure-el" title="Highlight element in preview">
-                        {{selector}}
-                      </a>
-                      <dl>
-                        <dt>Property Name</dt>
-                        <dd>{{key}}</dd>
-                        <dt>Expected Value</dt>
-                        <dd>{{aVal}}</dd>
-                        <dt>Actual Value</dt>
-                        <dd>{{bVal}}</dd>
-                      </dl>
-                    </li>
-                  {{/each}}
-                </ul>
-              {{/if}}
-              </li>
-            {{/each}}
-          </ul>
+          <div class="test-history">
+            <h3>History</h3>
+            <ul>
+              {{#each history}}
+                <li>
+                {{#if passed}}
+                  <span class="badge badge-success">
+                    <i class="icon-ok-circle"></i>
+                  </span>
+                  Passed on {{time}}
+                {{else}}
+                  <span class="badge badge-warning">
+                    <i class="icon-fire"></i>
+                  </span>
+                  Failed on {{time}}
+                  <ul class="failures">
+                    {{#each failures}}
+                      <li data-selector="{{selector}}" class="clearfix">
+                        <a href="#" class="failure-el" title="Highlight element in preview">
+                          {{selector}}
+                        </a>
+                        {{#each instances}}
+                        <dl>
+                          <dt>Property Name</dt>
+                          <dd class="name">{{key}}</dd>
+                          <dt>Expected Value</dt>
+                          <dd class="expected">{{aVal}}</dd>
+                          <dt>Actual Value</dt>
+                          <dd class="actual">{{bVal}}</dd>
+                        </dl>
+                        {{/each}}
+                      </li>
+                    {{/each}}
+                  </ul>
+                {{/if}}
+                </li>
+              {{/each}}
+            </ul>
+          </div>
         {{/if}}
       {{/with}}
     {{/if}}

@@ -14,17 +14,28 @@ Template.controls.events({
 });
 
 var openCreateDialog = function () {
-  Session.set("createError", null);
-  Session.set("showCreateDialog", true);
+  Session.set("modifyDialogError", null);
+  Session.set("modifyDialogType", 'create');
+  Session.set("showModifyDialog", true);
+};
+
+var openEditDialog = function () {
+  Session.set("modifyDialogError", null);
+  Session.set("modifyDialogType", 'edit');
+  Session.set("showModifyDialog", true);
 };
 
 Template.controls.loggedIn =
-Template.page.loggedIn = function () {
+UI.body.loggedIn = function () {
   return Meteor.userId() != null;
 };
 
-Template.controls.showCreateDialog = function () {
-  return Session.get("showCreateDialog");
+Template.controls.showModifyDialog = function () {
+  return Session.get("showModifyDialog");
+};
+
+Template.controls.showDeleteDialog = function () {
+  return Session.get("showDeleteDialog");
 };
 
 Template.list.renderSortable = function(){
@@ -57,11 +68,15 @@ Template.list.active = function () {
   return Session.equals("selected", this._id) ? " active " : '';
 };
 
+var setSelected = function(id){
+  Session.set('selected', id);
+  window.history.pushState('','',id);
+};
+
 Template.list.events({
   'click a': function(event, template){
     var id = event.currentTarget.attributes.getNamedItem('data-id').value;
-    Session.set('selected', id);
-    window.history.pushState('','',id);
+    setSelected(id);
     event.preventDefault();
   }
 });
@@ -75,7 +90,7 @@ Template.details.fillFrame = function(){
   setTimeout(function(){
     var linkTags = [];
     test.cssFiles.split('\n').forEach(function(href){
-      linkTags.push('<link href="' + href + '" type="text/css" rel="stylesheet" />');
+      linkTags.push('<link href="' + href + '?' + Date.now() + ' type="text/css" rel="stylesheet" />');
     });
     var frameId = 'test-frame-' + test._id,
         frameDoc = document.getElementById(frameId).contentWindow.document,
@@ -118,38 +133,89 @@ Template.details.events({
     console.log(extractComputedStyles(frameDoc.body,'BODY'));
 
     
+  },
+  'click button.edit': openEditDialog,
+  'click button.delete': function(){
+    Session.set('showDeleteDialog', true);
   }
 });
 
-Template.createDialog.events({
+Template.modifyDialog.isCreate = function(){
+  return Session.get("modifyDialogType") ===  'create';
+};
+
+Template.modifyDialog.fieldValue = function(data){
+  if(Template.modifyDialog.isCreate()){
+    return '';
+  };
+  var fieldName = data['hash']['key'];
+  return this[fieldName];
+};
+
+Template.modifyDialog.test = Template.deleteDialog.test = function(){
+  var id = Session.get("selected");
+  if(id){
+    return TestCases.findOne(id);
+  }else{
+    // No test result when nothing selected
+    return {};
+  };
+};
+
+Template.modifyDialog.events({
   'click .save': function (event, template) {
-    var title = template.find(".title").value;
-    var description = template.find(".description").value;
-    var cssFiles = template.find(".css-files").value;
-    var fixtureHTML = template.find(".fixture-html").value;
+    var title = template.find(".title").value,
+        description = template.find(".description").value,
+        cssFiles = template.find(".css-files").value,
+        fixtureHTML = template.find(".fixture-html").value,
+        isCreate = Template.modifyDialog.isCreate(),
+        id;
 
     if (title.length && cssFiles.length && fixtureHTML.length) {
-      var id = Meteor.call('createTest', {
+      var postData = {
         title: title,
         description: description,
         cssFiles: cssFiles,
         fixtureHTML: fixtureHTML
-      });
-
-      Session.set("selected", id);
-      Session.set("showCreateDialog", false);
+      };
+      if(isCreate){
+        Meteor.call('createTest', postData, function(error, result){
+          console.log(error);
+          if(error){
+            Session.set('modifyDialogError', error.reason);
+          }else{
+            setSelected(result);
+            Session.set("showModifyDialog", false);
+          };
+        });
+      }else{
+        id = this._id;
+        TestCases.update(id, {$set: postData});
+        Session.set("showModifyDialog", false);
+      };
     } else {
-      Session.set("createError",
+      Session.set("modifyDialogError",
                   "Needs a title, css file and fixture HTML!");
     }
   },
 
   'click .cancel': function () {
-    Session.set("showCreateDialog", false);
+    Session.set("showModifyDialog", false);
   }
 });
 
-Template.createDialog.error = function () {
-  return Session.get("createError");
+Template.modifyDialog.error = function () {
+  return Session.get("modifyDialogError");
 };
+
+
+Template.deleteDialog.events({
+  'click .delete': function (event, template) {
+    TestCases.remove(this._id);
+    Session.set("showDeleteDialog", false);
+  },
+  'click .cancel': function () {
+    Session.set("showDeleteDialog", false);
+  }
+});
 

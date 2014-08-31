@@ -6,14 +6,14 @@
 TestCases = new Meteor.Collection("TestCases");
 
 TestCases.allow({
-  insert: function (userId, party) {
+  insert: function (userId, test) {
     return false; // no cowboy inserts -- use createTest method
   },
-  update: function (userId, party, fields, modifier) {
-    if (userId !== party.owner)
+  update: function (userId, test, fields, modifier) {
+    if (userId !== test.owner)
       return false; // not the owner
 
-    var allowed = ['rank', "title", "description", "x", "y"];
+    var allowed = ["rank", "title", "description", "cssFiles", "fixtureHTML"];
     if (_.difference(fields, allowed).length)
       return false; // tried to write to forbidden field
 
@@ -22,9 +22,9 @@ TestCases.allow({
     // future Meteor will have a schema system to makes that easier.
     return true;
   },
-  remove: function (userId, party) {
+  remove: function (userId, test) {
     // You can only remove parties that you created and nobody is going to.
-    return party.owner === userId && attending(party) === 0;
+    return test.owner === userId;
   }
 });
 

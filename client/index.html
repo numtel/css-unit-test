@@ -3,10 +3,6 @@
 </head>
 
 <body>
-  {{> page}}
-</body>
-
-<template name="page">
   {{> controls}}
   {{#if loggedIn}}
     <div class="container">
@@ -15,11 +11,14 @@
     </div>
   {{else}}
   {{/if}}
-</template>
+</body>
 
 <template name="controls">
-  {{#if showCreateDialog}}
-    {{> createDialog}}
+  {{#if showModifyDialog}}
+    {{> modifyDialog}}
+  {{/if}}
+  {{#if showDeleteDialog}}
+    {{> deleteDialog}}
   {{/if}}
   <div class="navbar navbar-fixed-top">
     <div class="navbar-inner">
@@ -46,9 +45,9 @@
       Loading...
     </div>
   {{else}}
-    <div class="well span2">
+    <div class="well well-small span2">
       {{#if empty}}
-        <p>Please log in and click on 'Create New Test' to begin.</p>
+        <div class="alert">Please click 'Create New Test' to begin.</div>
       {{/if}}
       <ul class="nav nav-list" id="tests-list">
         {{#each tests}}
@@ -68,8 +67,8 @@
         <p>{{description}}</p>
         <div class="btn-group">
           <button class="btn edit">Edit</button>
-          <button class="btn extract">Extract Styles as Normative</button>
-          <button class="btn delte">Delete</button>
+          <button class="btn extract">Extract Computed Styles as Normative</button>
+          <button class="btn delete">Delete</button>
         </div>
         <iframe id="test-frame-{{_id}}"></iframe>
         {{fillFrame}}
@@ -78,36 +77,72 @@
   </div>
 </template>
 
-<template name="createDialog">
-  <div class="mask"> </div>
-  <div class="modal">
-    <div class="modal-header">
-      <button type="button" class="close cancel">&times;</button>
-      <h3>Add new test</h3>
+
+<template name="modifyDialog">
+  {{#with test}}
+    <div class="mask"> </div>
+    <div class="modal">
+      <div class="modal-header">
+        <button type="button" class="close cancel">&times;</button>
+        <h3>
+          {{#if isCreate}}
+            Create new test
+          {{else}}
+            Editing '{{title}}'
+          {{/if}}
+        </h3>
+      </div>
+
+      <div class="modal-body">
+        {{#if error}}
+          <div class="alert alert-error">{{error}}</div>
+        {{/if}}
+
+        <label>Title</label>
+        <input type="text" class="title span5" value="{{fieldValue key="title"}}">
+
+        <label>Description</label>
+        <textarea class="description span5">{{fieldValue key="description"}}</textarea>
+
+        <label>CSS Files (one HREF per line)</label>
+        <textarea class="css-files span5">{{fieldValue key="cssFiles"}}</textarea>
+
+        <label>Fixture HTML</label>
+        <textarea class="fixture-html span5">{{fieldValue key="fixtureHTML"}}</textarea>
+      </div>
+
+      <div class="modal-footer">
+        <a href="#" class="btn cancel">Cancel</a>
+        <a href="#" class="btn btn-primary save">
+          {{#if isCreate}}
+            Add test
+          {{else}}
+            Save Changes
+          {{/if}}
+        </a>
+      </div>
     </div>
+  {{/with}}
+</template>
 
-    <div class="modal-body">
-      {{#if error}}
-        <div class="alert alert-error">{{error}}</div>
-      {{/if}}
+<template name="deleteDialog">
+  {{#with test}}
+    <div class="mask"> </div>
+    <div class="modal">
+      <div class="modal-header">
+        <button type="button" class="close cancel">&times;</button>
+        <h3>Delete '{{title}}'?</h3>
+      </div>
 
-      <label>Title</label>
-      <input type="text" class="title span5">
+      <div class="modal-body">
+        Clicking 'Delete' will remove all trace of this test.
+      </div>
 
-      <label>Description</label>
-      <textarea class="description span5"></textarea>
-
-      <label>CSS Files (one HREF per line)</label>
-      <textarea class="css-files span5"></textarea>
-
-      <label>Fixture HTML</label>
-      <textarea class="fixture-html span5"></textarea>
+      <div class="modal-footer">
+        <a href="#" class="btn cancel">Cancel</a>
+        <a href="#" class="btn btn-primary delete">Delete</a>
+      </div>
     </div>
-
-    <div class="modal-footer">
-      <a href="#" class="btn cancel">Cancel</a>
-      <a href="#" class="btn btn-primary save">Add test</a>
-    </div>
-  </div>
+  {{/with}}
 </template>
 

@@ -1,5 +1,5 @@
 /*
- * CSS Unit Testing Framework
+ * CSS Unit Testing Application
  * ben@latenightsketches.com
  */
 
@@ -7,7 +7,7 @@ TestCases = new Meteor.Collection("TestCases");
 
 TestCases.allow({
   insert: function (userId, party) {
-    return false; // no cowboy inserts -- use createParty method
+    return false; // no cowboy inserts -- use createTest method
   },
   update: function (userId, party, fields, modifier) {
     if (userId !== party.owner)

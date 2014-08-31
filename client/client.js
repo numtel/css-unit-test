@@ -1,4 +1,9 @@
-Meteor.subscribe('TestCases');
+TestCases = new Meteor.Collection('TestCases');
+
+var testCasesHandle;
+Deps.autorun(function () {
+  testCasesHandle = Meteor.subscribe('TestCases');
+});
 
 Template.controls.events({
   'click a.createNewTest': function () {
@@ -13,7 +18,8 @@ var openCreateDialog = function () {
   Session.set("showCreateDialog", true);
 };
 
-Template.controls.loggedIn = function () {
+Template.controls.loggedIn =
+Template.page.loggedIn = function () {
   return Meteor.userId() != null;
 };
 
@@ -21,6 +27,9 @@ Template.controls.showCreateDialog = function () {
   return Session.get("showCreateDialog");
 };
 
+Template.list.loading = function () {
+  return !testCasesHandle.ready();
+};
 Template.list.tests = function(){
   return TestCases.find({}, {sort: {name: 1}});
 };
@@ -37,6 +46,8 @@ Template.list.events({
   'click a': function(event, template){
     var id = event.currentTarget.attributes.getNamedItem('data-id').value;
     Session.set('selected', id);
+    window.history.pushState('','',id);
+    event.preventDefault();
   }
 });
 

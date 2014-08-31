@@ -3,13 +3,19 @@
 </head>
 
 <body>
-
-  {{> controls}}
-  <div class="container">
-    {{> list}}
-    {{> details}}
-  </div>
+  {{> page}}
 </body>
+
+<template name="page">
+  {{> controls}}
+  {{#if loggedIn}}
+    <div class="container">
+      {{> list}}
+      {{> details}}
+    </div>
+  {{else}}
+  {{/if}}
+</template>
 
 <template name="controls">
   {{#if showCreateDialog}}
@@ -35,16 +41,22 @@
 </template>
 
 <template name="list">
-  <div class="well span2">
-    {{#if empty}}
-      <p>Please log in and click on 'Create New Test' to begin.</p>
-    {{/if}}
-    <ul class="nav nav-list">
-      {{#each tests}}
-        <li class="{{active}}"><a href="#{{_id}}" data-id="{{_id}}">{{title}}</a></li>
-      {{/each}}
-    </ul>
-  </div>
+  {{#if loading}}
+    <div class="">
+      Loading...
+    </div>
+  {{else}}
+    <div class="well span2">
+      {{#if empty}}
+        <p>Please log in and click on 'Create New Test' to begin.</p>
+      {{/if}}
+      <ul class="nav nav-list">
+        {{#each tests}}
+          <li class="{{active}}"><a href="{{_id}}" data-id="{{_id}}">{{title}}</a></li>
+        {{/each}}
+      </ul>
+    </div>
+  {{/if}}
 </template>
 
 <template name="details">

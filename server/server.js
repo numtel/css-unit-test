@@ -3,5 +3,9 @@ Meteor.startup(function () {
 });
 
 Meteor.publish("TestCases", function () {
-  return TestCases.find();
+  //return TestCases.find();
+  if(this.userId==null){
+    return [];
+  };
+  return TestCases.find({$or: [{invited: this.userId}, {owner: this.userId}]});
 });

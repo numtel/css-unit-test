@@ -13,7 +13,15 @@ TestCases.allow({
     if (userId !== test.owner)
       return false; // not the owner
 
-    var allowed = ["rank", "title", "description", "cssFiles", "fixtureHTML"];
+    var allowed = [
+      "rank", 
+      "title", 
+      "description", 
+      "cssFiles", 
+      "fixtureHTML", 
+      "normative",
+      "history",
+      "lastPassed"];
     if (_.difference(fields, allowed).length)
       return false; // tried to write to forbidden field
 

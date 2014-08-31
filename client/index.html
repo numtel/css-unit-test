@@ -51,7 +51,18 @@
       {{/if}}
       <ul class="nav nav-list" id="tests-list">
         {{#each tests}}
-          <li class="{{active}}"><a href="{{_id}}" data-id="{{_id}}">{{title}}</a></li>
+          <li class="{{active}}"><a href="{{_id}}" data-id="{{_id}}">
+            {{#if normative}}
+              {{#if lastPassed}}
+                <span class="badge badge-success"><i class="icon-ok-circle"></i></span>
+              {{else}}
+                <span class="badge badge-warning"><i class="icon-fire"></i></span>
+              {{/if}}
+            {{else}}
+              <span class="badge badge-info"><i class="icon-wrench"></i></span>
+            {{/if}}
+            {{title}}
+          </a></li>
         {{/each}}
       </ul>
       {{renderSortable}}
@@ -65,13 +76,59 @@
       {{#with test}}
         <h2>{{title}}</h2>
         <p>{{description}}</p>
+        {{#if hasNormative}}
+        {{else}}
+          <div class="alert">
+            This test needs to have normative styles extracted before it can be run.
+          </div>
+        {{/if}}
         <div class="btn-group">
-          <button class="btn edit">Edit</button>
+          {{#if hasNormative}}
+            <button class="btn run btn-primary">Run Test</button>
+          {{/if}}
           <button class="btn extract">Extract Computed Styles as Normative</button>
+          <button class="btn edit">Edit</button>
           <button class="btn delete">Delete</button>
         </div>
         <iframe id="test-frame-{{_id}}"></iframe>
         {{fillFrame}}
+        {{#if history}}
+          <h3>History</h3>
+          <ul>
+            {{#each history}}
+              <li>
+              {{#if passed}}
+                <span class="badge badge-success">
+                  <i class="icon-ok-circle"></i>
+                </span>
+                Passed on {{time}}
+              {{else}}
+                <span class="badge badge-warning">
+                  <i class="icon-fire"></i>
+                </span>
+                Failed on {{time}}
+                <ul>
+                  {{#each failures}}
+                    <li data-selector="{{selector}}">
+                      <a href="#" class="failure-el" title="Highlight element in preview">
+                        {{selector}}
+                      </a>
+                      <dl>
+                        <dt>Property Name</dt>
+                        <dd>{{key}}</dd>
+                        <dt>Expected Value</dt>
+                        <dd>{{aVal}}</dd>
+                        <dt>Actual Value</dt>
+                        <dd>{{bVal}}</dd>
+                      </dl>
+                    </li>
+                  {{/each}}
+                </ul>
+              {{/if}}
+              </li>
+            {{/each}}
+          </ul>
+        {{/if}}
       {{/with}}
     {{/if}}
   </div>
@@ -140,7 +197,7 @@
 
       <div class="modal-footer">
         <a href="#" class="btn cancel">Cancel</a>
-        <a href="#" class="btn btn-primary delete">Delete</a>
+        <a href="#" class="btn btn-danger delete">Delete</a>
       </div>
     </div>
   {{/with}}

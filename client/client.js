@@ -5,14 +5,6 @@ Deps.autorun(function () {
   testCasesHandle = Meteor.subscribe('TestCases');
 });
 
-Template.controls.events({
-  'click a.createNewTest': function () {
-    if(Meteor.userId()){
-      openCreateDialog();
-    };
-  }
-});
-
 var openCreateDialog = function () {
   Session.set("modifyDialogError", null);
   Session.set("modifyDialogType", 'create');
@@ -37,6 +29,15 @@ Template.controls.showModifyDialog = function () {
 Template.controls.showDeleteDialog = function () {
   return Session.get("showDeleteDialog");
 };
+
+Template.controls.events({
+  'click a.createNewTest': function () {
+    if(Meteor.userId()){
+      openCreateDialog();
+    };
+  }
+});
+
 
 Template.list.renderSortable = function(){
   setTimeout(function(){
@@ -82,7 +83,11 @@ Template.list.events({
 });
 
 Template.details.test = function(){
-  return TestCases.findOne(Session.get("selected"));
+  var result = TestCases.findOne(Session.get("selected"));
+  if(result && result.history){
+    result.history = result.history.reverse();
+  };
+  return result;
 };
 
 Template.details.fillFrame = function(){
@@ -90,13 +95,17 @@ Template.details.fillFrame = function(){
   setTimeout(function(){
     var linkTags = [];
     test.cssFiles.split('\n').forEach(function(href){
-      linkTags.push('<link href="' + href + '?' + Date.now() + ' type="text/css" rel="stylesheet" />');
+      linkTags.push('<link href="' + href + '?' + Date.now() + 
+                    ' type="text/css" rel="stylesheet" />');
     });
     var frameId = 'test-frame-' + test._id,
         frameDoc = document.getElementById(frameId).contentWindow.document,
         frameHTML = ['<html>',
                      '<head>',
                      linkTags.join('\n'),
+                     '<style>',
+                     '.failure-' + frameId + ' { outline: 2px solid #ff0; }',
+                     '</style>',
                      '</head>',
                      '<body>',
                      test.fixtureHTML,
@@ -108,35 +117,50 @@ Template.details.fillFrame = function(){
   }, 10);
 };
 
-var extractComputedStyles = function(base, baseSelector){
-  if(baseSelector === undefined){
-    baseSelector = '';
-  };
-  var output = [];
-  _.each(base.children, function(child){
-    var selector = baseSelector + '>' + child.nodeName + 
-                   (child.id ? '#' + child.id : '');
-    output.push({
-      selector: selector,
-      styles: window.getComputedStyle(child),
-      children: extractComputedStyles(child, selector)
-    });
-  });
-  return output;
+Template.details.hasNormative = function(){
+  return !!this.normative;
 };
 
 Template.details.events({
+  'click button.run': function(){
+    var test = this,
+        frameId = 'test-frame-' + test._id,
+        frameDoc = document.getElementById(frameId).contentWindow.document,
+        normative = JSON.parse(test.normative),
+        currentData = CssTest.extractComputedStyles(frameDoc.body,'BODY'),
+        failures = CssTest.compareStyles(normative, currentData),
+        report = {time: new Date(), 
+                  passed: failures.length === 0,
+                  failures: failures};
+    if(test.history !== undefined && test.history.length !== undefined){
+      TestCases.update(test._id, {$push: {history: report}});
+    }else{
+      TestCases.update(test._id, {$set: {history: [report]}});
+    };
+    TestCases.update(test._id, {$set: {lastPassed: report.passed}});
+  },
   'click button.extract': function(){
     var test = this,
         frameId = 'test-frame-' + test._id,
-        frameDoc = document.getElementById(frameId).contentWindow.document;
-    console.log(extractComputedStyles(frameDoc.body,'BODY'));
-
-    
+        frameDoc = document.getElementById(frameId).contentWindow.document,
+        data = CssTest.extractComputedStyles(frameDoc.body,'BODY'),
+        asString = JSON.stringify(data);
+    TestCases.update(test._id, {$set: {normative: asString}});
   },
   'click button.edit': openEditDialog,
   'click button.delete': function(){
     Session.set('showDeleteDialog', true);
+  },
+  'click a.failure-el': function(event){
+    var test = TestCases.findOne(Session.get('selected')),
+        selector = $(event.currentTarget).parent().attr('data-selector'),
+        frameId = 'test-frame-' + test._id,
+        failureClass = 'failure-' + frameId,
+        $frameDoc = $('#' + frameId).contents(),
+        $el = $frameDoc.find(selector);
+    $frameDoc.find('.' + failureClass).removeClass(failureClass);
+    $el.addClass(failureClass);
+    event.preventDefault();
   }
 });
 

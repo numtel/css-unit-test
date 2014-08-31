@@ -1,0 +1,100 @@
+<head>
+  <title>CSS Unit Test</title>
+</head>
+
+<body>
+
+  {{> controls}}
+  <div class="container">
+    {{> list}}
+    {{> details}}
+  </div>
+</body>
+
+<template name="controls">
+  {{#if showCreateDialog}}
+    {{> createDialog}}
+  {{/if}}
+  <div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+      <div class="container">
+        <a class="brand" href="#">CSS Unit Test</a>
+        <ul class="nav">
+          {{#if loggedIn}}
+            <li>
+              <a class="createNewTest" href="#">Create New Test</a>
+            </li>
+          {{/if}}
+        </ul>
+        <ul class="nav pull-right">
+          <li>{{> loginButtons align="right"}}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template name="list">
+  <div class="well span2">
+    {{#if empty}}
+      <p>Please log in and click on 'Create New Test' to begin.</p>
+    {{/if}}
+    <ul class="nav nav-list">
+      {{#each tests}}
+        <li class="{{active}}"><a href="#{{_id}}" data-id="{{_id}}">{{title}}</a></li>
+      {{/each}}
+    </ul>
+  </div>
+</template>
+
+<template name="details">
+  <div class="span7">
+    {{#if test}}
+      {{#with test}}
+        <h2>{{title}}</h2>
+        <p>{{description}}</p>
+        <div class="btn-group">
+          <button class="btn edit">Edit</button>
+          <button class="btn extract">Extract Styles as Normative</button>
+          <button class="btn delte">Delete</button>
+        </div>
+        <iframe id="test-frame-{{_id}}"></iframe>
+        {{fillFrame}}
+      {{/with}}
+    {{/if}}
+  </div>
+</template>
+
+<template name="createDialog">
+  <div class="mask"> </div>
+  <div class="modal">
+    <div class="modal-header">
+      <button type="button" class="close cancel">&times;</button>
+      <h3>Add new test</h3>
+    </div>
+
+    <div class="modal-body">
+      {{#if error}}
+        <div class="alert alert-error">{{error}}</div>
+      {{/if}}
+
+      <label>Title</label>
+      <input type="text" class="title span5">
+
+      <label>Description</label>
+      <textarea class="description span5"></textarea>
+
+      <label>CSS Files (one HREF per line)</label>
+      <textarea class="css-files span5"></textarea>
+
+      <label>Fixture HTML</label>
+      <textarea class="fixture-html span5"></textarea>
+    </div>
+
+    <div class="modal-footer">
+      <a href="#" class="btn cancel">Cancel</a>
+      <a href="#" class="btn btn-primary save">Add test</a>
+    </div>
+  </div>
+</template>
+

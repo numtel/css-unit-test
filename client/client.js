@@ -173,6 +173,13 @@ Template.details.events({
   'click button.delete': function(){
     Session.set('showDeleteDialog', true);
   },
+  'click a.expand-failures': function(event){
+    var $el = $(event.currentTarget),
+        failures = $el.parent().children('ul.failures');
+    failures.toggleClass('show');
+    $el.toggleClass('active');
+    event.preventDefault();
+  },
   'click a.failure-el': function(event){
     var test = TestCases.findOne(Session.get('selected')),
         selector = $(event.currentTarget).parent().attr('data-selector'),
@@ -192,6 +199,9 @@ Template.modifyDialog.isCreate = function(){
 
 Template.modifyDialog.fieldValue = function(data){
   if(Template.modifyDialog.isCreate()){
+    if(data['hash']['default']){
+      return data['hash']['default'];
+    };
     return '';
   };
   var fieldName = data['hash']['key'];
@@ -215,35 +225,37 @@ Template.modifyDialog.events({
         description = template.find(".description").value,
         cssFiles = template.find(".css-files").value,
         fixtureHTML = template.find(".fixture-html").value,
+        widths = template.find(".widths").value,
         isCreate = Template.modifyDialog.isCreate(),
         id;
 
-    if (title.length && cssFiles.length && fixtureHTML.length) {
-      var postData = {
-        title: title,
-        description: description,
-        cssFiles: cssFiles,
-        fixtureHTML: fixtureHTML
-      };
-      if(isCreate){
-        Meteor.call('createTest', postData, function(error, result){
-          console.log(error);
-          if(error){
-            Session.set('modifyDialogError', error.reason);
-          }else{
-            setSelected(result);
-            Session.set("showModifyDialog", false);
-          };
-        });
-      }else{
-        id = this._id;
-        TestCases.update(id, {$set: postData});
-        Session.set("showModifyDialog", false);
-      };
-    } else {
-      Session.set("modifyDialogError",
-                  "Needs a title, css file and fixture HTML!");
-    }
+    var postData = {
+      title: title,
+      description: description,
+      cssFiles: cssFiles,
+      widths: widths,
+      fixtureHTML: fixtureHTML
+    };
+
+    if(isCreate){
+      Meteor.call('createTest', postData, function(error, result){
+        if(error){
+          Session.set('modifyDialogError', error.reason);
+        }else{
+          setSelected(result);
+          Session.set("showModifyDialog", false);
+        };
+      });
+    }else{
+      postData._id = this._id;
+      Meteor.call('editTest', postData, function(error, result){
+        if(error){
+          Session.set('modifyDialogError', error.reason);
+        }else{
+          Session.set("showModifyDialog", false);
+        };
+      });
+    };
   },
 
   'click .cancel': function (event) {

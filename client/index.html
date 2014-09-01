@@ -111,7 +111,8 @@
                   <span class="badge badge-warning">
                     <i class="icon-fire"></i>
                   </span>
-                  Failed on {{time}}
+                  <span class="status">Failed on {{time}}</span>
+                  <a class="expand-failures" href="#">Details</a>
                   <ul class="failures">
                     {{#each failures}}
                       <li data-selector="{{selector}}" class="clearfix">
@@ -172,6 +173,9 @@
         <label>CSS Files (one HREF per line)</label>
         <textarea class="css-files span5">{{fieldValue key="cssFiles"}}</textarea>
 
+        <label>Test Resolution Widths</label>
+        <input type="text" class="widths span5" value="{{fieldValue key="widths" default="1024"}}">
+
         <label>Fixture HTML</label>
         <textarea class="fixture-html span5">{{fieldValue key="fixtureHTML"}}</textarea>
       </div>
@@ -200,7 +204,7 @@
       </div>
 
       <div class="modal-body">
-        Clicking 'Delete' will remove all trace of this test.
+        Clicking 'Delete' will permanently remove all traces of this test.
       </div>
 
       <div class="modal-footer">

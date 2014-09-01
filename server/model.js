@@ -1,8 +1,3 @@
-/*
- * CSS Unit Testing Application
- * ben@latenightsketches.com
- */
-
 TestCases = new Meteor.Collection("TestCases");
 
 TestCases.allow({
@@ -13,50 +8,71 @@ TestCases.allow({
     if (userId !== test.owner)
       return false; // not the owner
 
-    var allowed = [
-      "rank", 
-      "title", 
-      "description", 
-      "cssFiles", 
-      "fixtureHTML", 
-      "normative",
-      "history",
-      "lastPassed"];
-    if (_.difference(fields, allowed).length)
-      return false; // tried to write to forbidden field
-
-    // A good improvement would be to validate the type of the new
-    // value of the field (and if a string, the length.) In the
-    // future Meteor will have a schema system to makes that easier.
-    return true;
+    // Only allow updating sort order, otherwise use editTest method
+    var allowed = ['rank'];
+    return _.difference(fields, allowed).length === 0;
   },
   remove: function (userId, test) {
-    // You can only remove parties that you created and nobody is going to.
     return test.owner === userId;
   }
 });
 
 
-var NonEmptyString = Match.Where(function (x) {
-  check(x, String);
-  return x.length !== 0;
-});
-
+var validatePost = function(data, isCreate){
+  var validators = {
+    string: function(key, value, label, options){
+      if(options.min !== undefined && value.length < options.min){
+        return label + ' too short';
+      };
+      if(options.max !== undefined && value.length > options.max){
+        return label + ' too long';
+      };
+      return true;
+    },
+    integerList: function(key, value, label, options){
+      if(!/^[0-9,\s]+$/.test(value)){
+        return label + ' may only include numbers, commas, and spaces';
+      };
+      return true;
+    }
+  };
+  var fieldDefs = {
+    title: ['Title', 'string', {min: 1, max: 100}],
+    description: ['Description', 'string', {min: 1, max: 1000}],
+    cssFiles: ['CSS Files', 'string', {min: 1, max: 10000}],
+    fixtureHTML: ['Fixture HTML', 'string', {min: 1, max: 100000}],
+    widths: ['Test Resolution Widths', 'integerList', {}],
+  };
+  var validate = function(key, value){
+    if(fieldDefs.hasOwnProperty(key)){
+      return validators[fieldDefs[key][1]](key, value, fieldDefs[key][0], fieldDefs[key][2])
+    };
+    return 'Post error!';
+  };
+  if(!isCreate){
+    fieldDefs['_id'] = ['ID', 'string', {min:1, max:100}];
+    // Modifying a test, ensure that each passed value matches
+    _.each(data, function(value, key){
+      var result = validate(key, value);
+      if(result !== true){
+        throw new Meteor.Error(413, result);
+      };
+    });
+  }else{
+    // Creating a test, make sure every field validates
+    _.each(fieldDefs, function(options, key){
+      var result = validate(key, data[key]);
+      if(result !== true){
+        throw new Meteor.Error(413, result);
+      };
+    });
+  };
+};
 
 Meteor.methods({
   createTest: function (options) {
-    check(options, {
-      title: NonEmptyString,
-      description: NonEmptyString,
-      cssFiles: NonEmptyString,
-      fixtureHTML: NonEmptyString,
-      _id: Match.Optional(NonEmptyString)
-    });
+    validatePost(options, true);
 
-    if (options.title.length > 100)
-      throw new Meteor.Error(413, "Title too long");
-    if (options.description.length > 1000)
-      throw new Meteor.Error(413, "Description too long");
     if (! this.userId)
       throw new Meteor.Error(403, "You must be logged in");
 
@@ -68,9 +84,27 @@ Meteor.methods({
       title: options.title,
       description: options.description,
       cssFiles: options.cssFiles,
+      widths: options.widths,
       fixtureHTML: options.fixtureHTML
     });
     return id;
+  },
+  editTest: function (options) {
+    validatePost(options, false);
+
+    var current = TestCases.findOne(options._id);
+
+    if (! this.userId || current.owner !== this.userId)
+      throw new Meteor.Error(403, "Only owner can edit test case");
+
+    TestCases.update(options._id, {$set: {
+      title: options.title,
+      description: options.description,
+      cssFiles: options.cssFiles,
+      widths: options.widths,
+      fixtureHTML: options.fixtureHTML
+    }});
+    return options._id;
   }
 });
 

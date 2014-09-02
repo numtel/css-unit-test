@@ -1,56 +1,42 @@
 var phantomjs = Npm.require('phantomjs');
-var spawn = Npm.require('child_process').spawn;
+var shell = Npm.require('child_process');
 var fs = Npm.require('fs');
+var Future = Npm.require('fibers/future');
 
 Meteor.startup(function () {
   // code to run on server at startup
-  Future = Npm.require('fibers/future');
 });
 
 Meteor.publish("TestCases", function () {
-  //return TestCases.find();
   if(this.userId==null){
     return [];
   };
-  return TestCases.find({$or: [{invited: this.userId}, {owner: this.userId}]});
+  return TestCases.find({owner: this.userId});
 });
 
-var getHTML = function(test){
-  var linkTags = [];
-  test.cssFiles.split('\n').forEach(function(href){
-    linkTags.push('<link href="' + href + '?' + Date.now() + 
-                  ' type="text/css" rel="stylesheet" />');
-  });
-  var frameId = 'test-frame-' + test._id,
-      frameHTML = [
-       '<html>',
-       '<head>',
-       linkTags.join('\n'),
-       '<style>',
-       '.failure-' + frameId + ' { outline: 2px solid #ff0; }',
-       '</style>',
-       '</head>',
-       '<body>',
-       test.fixtureHTML,
-       '</body>',
-       '</html>'].join('\n');
-  return frameHTML;
-};
 
 Meteor.methods({
+  extractStyles: function(id){
+    var fut = new Future();
+    var test = new TestCases.TestCase(id);
+    test.extractStylesAsync(function(result){
+      fut['return'](result);
+    });
+    return fut.wait();
+  },
   runTest: function(options){
     var fut = new Future();
-    var test = TestCases.findOne(options.id);
-    if(!test){
+    var test = new TestCases.TestCase(options.id);
+    if(test.invalid){
       return 'Invalid test specified!';
     };
     var htmlFile = 'test-' + test._id + '.html';
-    console.log(phantomjs);
-    fs.writeFile(htmlFile, getHTML(test), function(err) {
+    fs.writeFile(htmlFile, test.getHTML(), function(err) {
       if(err){
         console.log(err);
       }else{
-        command = spawn(phantomjs.path, ['assets/app/phantomDriver.js', htmlFile]);
+        var testWidth = 1024;
+        command = shell.spawn(phantomjs.path, ['assets/app/phantomDriver.js', htmlFile, testWidth]);
 
         command.stdout.on('data',  function (data) {
           console.log('stdout: ' + data);

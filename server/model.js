@@ -1,4 +1,6 @@
-TestCases = new Meteor.Collection("TestCases");
+TestCases = new Meteor.Collection("TestCases"); // Parent Collection
+TestNormatives = new Meteor.Collection("TestNormatives");
+TestHistory = new Meteor.Collection("TestHistory");
 
 TestCases.allow({
   insert: function (userId, test) {

@@ -1,21 +1,26 @@
-if(Meteor.isServer){
-  var phantomjs = Npm.require('phantomjs');
-  var shell = Npm.require('child_process');
-  var fs = Npm.require('fs');
-};
-
+/*
+ * TestCase Class
+ *
+ * TestCase.getHTML()
+ * TestCase.extractStylesAsync(function(value){})
+ * TestCase.setNormative(value)
+ * TestCase.loadLatestNormative(function(normative[]){})
+    - Callback only on client, sync'd on server
+ * TestCase.loadAllNormatives(function(normative[]){})
+    - Callback only on client, sync'd on server
+ *
+ */
 TestCases.TestCase = function(id){
   if(id === undefined){
     // TODO: Prepare new TestCase
   }else{
     var data = TestCases.findOne(id);
-    if(!data){
+    if(data === undefined){
       throw new Meteor.Error(404, "TestCase not found");
     };
   };
 
   _.extend(this, data);
-
   // Convert widths string into array
   this.widths = this.widths.split(',').map(function(width){
     return parseInt(width.trim(), 10);
@@ -47,6 +52,9 @@ TestCases.TestCase.prototype.getHTML = function(){
 TestCases.TestCase.prototype.extractStylesAsync = function(callback){
   var that = this;
   if(Meteor.isServer){
+    var phantomjs = Npm.require('phantomjs');
+    var shell = Npm.require('child_process');
+    var fs = Npm.require('fs');
     var htmlFile = 'test-' + this._id + '.html';
     fs.writeFile(htmlFile, this.getHTML(), function(err) {
       if(err){
@@ -119,14 +127,33 @@ TestCases.TestCase.prototype.setNormative = function(value){
   };
 };
 
-TestCases.TestCase.prototype.normativeCursor = function(){
-  return TestNormatives.find({testCase: this._id}, {sort: {timestamp:-1}});
-};
+if(Meteor.isServer){
+  var loadNormatives = function(options){
+    _.extend({
+      sort: {timestamp:-1}
+    }, options);
+    return TestNormatives.find({testCase: this._id}, options).fetch();
+  };
 
-TestCases.TestCase.prototype.loadLatestNormative = function(){
-  return this.normativeCursor().limit(1).fetch();
-};
+  TestCases.TestCase.prototype.loadLatestNormative = function(){
+    return loadNormatives.call(this, {limit: 1});
+  };
 
-TestCases.TestCase.prototype.loadAllNormatives = function(){
-  return this.normativeCursor().fetch();
+  TestCases.TestCase.prototype.loadAllNormatives = function(){
+    return loadNormatives.call(this);
+  };
+}else if(Meteor.isClient){
+  // Basic methods that only require the id to be sent
+  ['loadLatestNormative', 'loadAllNormatives'].forEach(function(func){
+    TestCases.TestCase.prototype[func] = function(callback){
+      var that = this;
+      Meteor.call(func, {id: this._id}, function(error, result){
+        if(error){
+          console.log(func + ' Failed!', error, result);
+          return;
+        };
+        callback.call(that, result);
+      });
+    };
+  });
 };

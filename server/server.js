@@ -23,5 +23,15 @@ Meteor.methods({
   setNormative: function(options){
     var test = new TestCases.TestCase(options.id);
     test.setNormative(options.value);
+  },
+  loadLatestNormative: function(options){
+    var test = new TestCases.TestCase(options.id);
+    var out = test.loadLatestNormative();
+    console.log(out);
+    return out;
+  },
+  loadAllNormatives: function(options){
+    var test = new TestCases.TestCase(options.id);
+    return test.loadAllNormatives();
   }
 });

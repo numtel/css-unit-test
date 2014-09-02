@@ -89,12 +89,13 @@ TestCases.TestCase.prototype.extractStylesAsync = function(callback){
 };
 
 TestCases.TestCase.prototype.setNormative = function(value){
+  var that = this;
   if(Meteor.isServer){
     if(value === undefined){
       // If no normative is spec'd then grab current
-      this.extractStylesAsync(function(result){
-        this.setNormative(result);
-      });
+      this.extractStylesAsync(Meteor.bindEnvironment(function(result){
+        that.setNormative(result);
+      }));
       return;
     };
 
@@ -106,9 +107,7 @@ TestCases.TestCase.prototype.setNormative = function(value){
       timestamp: Date.now(),
       value: value
     }
-    console.log(insertData);
     TestNormatives.insert(insertData);
-    console.log('normative added!', id);
     return id;
   }else if(Meteor.isClient){
     Meteor.call('setNormative', {id: this._id, value: value}, function(error, result){

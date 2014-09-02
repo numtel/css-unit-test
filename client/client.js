@@ -1,12 +1,8 @@
-TestCases = new Meteor.Collection("TestCases"); // Parent Collection
-TestNormatives = new Meteor.Collection("TestNormatives");
-TestHistory = new Meteor.Collection("TestHistory");
+TestCases = new Meteor.Collection('TestCases');
 
-var testCasesHandle, testNormativeHandle, testHistoryHandle;
+var testCasesHandle;
 Deps.autorun(function () {
   testCasesHandle = Meteor.subscribe('TestCases');
-  testNormativesHandle = Meteor.subscribe('TestNormatives');
-  testHistoryHandle = Meteor.subscribe('TestHistory');
 });
 
 var openCreateDialog = function () {

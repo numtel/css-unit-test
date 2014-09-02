@@ -58,7 +58,8 @@ page.onLoadFinished = function(status){
     fs.write(outputFile, JSON.stringify(output), 'w');
     phantom.exit();
   }else{
-    phantom.exit();
+    throw 'Failed to parse ' + htmlFile;
   };
 };
+
 page.setContent(pageHTML, 'http://localhost/');

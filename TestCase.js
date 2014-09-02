@@ -16,9 +16,6 @@ TestCases.TestCase = function(id){
 
   _.extend(this, data);
 
-  // Load latest Normative
-
-
   // Convert widths string into array
   this.widths = this.widths.split(',').map(function(width){
     return parseInt(width.trim(), 10);
@@ -74,7 +71,8 @@ TestCases.TestCase.prototype.extractStylesAsync = function(callback){
                 outContents = fs.readFileSync(outFile),
                 styles = JSON.parse(outContents);
             callback.call(that, styles);
-            // TODO: delete html file
+            // Delete html, output file
+            [outFile, htmlFile].forEach(fs.unlinkSync);
           };
         });
       };
@@ -82,8 +80,7 @@ TestCases.TestCase.prototype.extractStylesAsync = function(callback){
   }else if(Meteor.isClient){
     Meteor.call('extractStyles', this._id, function(error, result){
       if(error){
-        console.log('extractStyles Failed!');
-        console.log(error, result);
+        console.log('extractStyles Failed!', error, result);
         return;
       };
       callback.call(that, result);
@@ -92,10 +89,45 @@ TestCases.TestCase.prototype.extractStylesAsync = function(callback){
 };
 
 TestCases.TestCase.prototype.setNormative = function(value){
-  if(value === undefined){
-    value = this.extractStyles();
+  if(Meteor.isServer){
+    if(value === undefined){
+      // If no normative is spec'd then grab current
+      this.extractStylesAsync(function(result){
+        this.setNormative(result);
+      });
+      return;
+    };
+
+    var id = Random.id();
+    var insertData = {
+      _id: id,
+      testCase: this._id,
+      owner: this.owner,
+      timestamp: Date.now(),
+      value: value
+    }
+    console.log(insertData);
+    TestNormatives.insert(insertData);
+    console.log('normative added!', id);
+    return id;
+  }else if(Meteor.isClient){
+    Meteor.call('setNormative', {id: this._id, value: value}, function(error, result){
+      if(error){
+        console.log('setNormative Failed!', error, result);
+        return;
+      };
+    });
   };
 };
 
+TestCases.TestCase.prototype.normativeCursor = function(){
+  return TestNormatives.find({testCase: this._id}, {sort: {timestamp:-1}});
+};
+
+TestCases.TestCase.prototype.loadLatestNormative = function(){
+  return this.normativeCursor().limit(1).fetch();
+};
+
 TestCases.TestCase.prototype.loadAllNormatives = function(){
+  return this.normativeCursor().fetch();
 };

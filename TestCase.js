@@ -28,8 +28,8 @@ TestCases.TestCase = function(id){
 TestCases.TestCase.prototype.getHTML = function(){
   var linkTags = [];
   this.cssFiles.split('\n').forEach(function(href){
-    linkTags.push('<link href="' + href + '?' + Date.now() + 
-                  ' type="text/css" rel="stylesheet" />');
+    linkTags.push('<link href="' + href + '?' + Date.now() + '" ' +
+                  'type="text/css" rel="stylesheet" />');
   });
   var frameId = 'test-frame-' + this._id,
       frameHTML = [
@@ -61,14 +61,14 @@ TestCases.TestCase.prototype.extractStylesAsync = function(callback){
 
 
         command.stdout.on('data', function(data){
-          console.log('PhantomJS Error: ' + data);
+          console.log('PhantomJS stdout: ' + data);
         });
 
         command.stderr.on('data', function(data){
-          console.log('PhantomJS Error: ' + data);
+          console.log('PhantomJS stderr: ' + data);
         });
 
-        command.on('exit', function (code) {
+        command.on('exit', function(code) {
           if(code === 0){
             var outFile = htmlFile.replace('.html', '-' + testWidth + '.out'),
                 outContents = fs.readFileSync(outFile),

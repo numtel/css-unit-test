@@ -28,25 +28,25 @@ page.onLoadFinished = function(status){
           var style = window.getComputedStyle(child);
           var attributes = {};
           var propertyName;
-          for(var i = 0; i<style.length; i++){
-            propertyName = style.item(i);
+          for(var j = 0; j<style.length; j++){
+            propertyName = style.item(j);
             attributes[propertyName] = style.getPropertyValue(propertyName);
           };
 
           // Grab matching rules
-          var ruleList = child.ownerDocument.defaultView.getMatchedCSSRules(child, '') || [];
-          var rules = [];
-          for(var i = 0; i<ruleList.length; i++){
-            rules.push({
-              selector: ruleList[i].selectorText,
-              sheet: ruleList[i].parentStyleSheet.href
-            });
-          };
+          // TODO: Seems to crash phantomjs...maybe webkit too old?
+//           var ruleList = child.ownerDocument.defaultView.getMatchedCSSRules(child, '');
+//           var rules = [];
+//           for(var j = 0; j<ruleList.length; j++){
+//             rules.push({
+//               selector: ruleList[j].selectorText,
+//               sheet: ruleList[j].parentStyleSheet.href
+//             });
+//           };
 
           output.push({
             selector: selector,
             attributes: attributes,
-            rules: rules,
             children: extractComputedStyles(child, selector)
           });
         };
@@ -56,7 +56,6 @@ page.onLoadFinished = function(status){
     });
     var outputFile = htmlFile.replace('.html', '-' + testWidth + '.out');
     fs.write(outputFile, JSON.stringify(output), 'w');
-    page.render('/home/ben/test.jpg');
     phantom.exit();
   }else{
     phantom.exit();

@@ -8,14 +8,37 @@ Meteor.publish("TestCases", function () {
   if(this.userId==null){
     return [];
   };
-  return TestCases.find({owner: this.userId});
+  return TestCases.find(
+    {owner: this.userId}, 
+    {fields: {history: 0}}
+  );
 });
 
+var loadTest = function(id){
+  var test = new TestCases.TestCase(id);
+  if(test.notFound){
+    throw 'Invalid test case';
+  };
+  return test;
+};
+
 Meteor.methods({
-  extractStyles: function(id){
+  getHistory: function(options){
+    return loadTest(options.id).history;
+  },
+  setData: function(options){
     var fut = new Future();
-    var test = new TestCases.TestCase(id);
-    test.extractStylesAsync(function(error, result){
+    loadTest(options.id).setData(options.data, function(error, result){
+      if(error){
+        throw error;
+      };
+      fut['return'](result);
+    });
+    return fut.wait();
+  },
+  extractStyles: function(options){
+    var fut = new Future();
+    loadTest(options.id).extractStyles(function(error, result){
       if(error){
         throw error;
       };
@@ -24,21 +47,17 @@ Meteor.methods({
     return fut.wait();
   },
   setNormative: function(options){
-    var test = new TestCases.TestCase(options.id);
-    return test.setNormative(options.value);
+    return loadTest(options.id).setNormative(options.value);
   },
   loadLatestNormative: function(options){
-    var test = new TestCases.TestCase(options.id);
-    return test.loadLatestNormative();
+    return loadTest(options.id).loadLatestNormative();
   },
   loadAllNormatives: function(options){
-    var test = new TestCases.TestCase(options.id);
-    return test.loadAllNormatives();
+    return loadTest(options.id).loadAllNormatives();
   },
   run: function(options){
     var fut = new Future();
-    var test = new TestCases.TestCase(options.id);
-    test.run(options.options, function(error, result){
+    loadTest(options.id).run(options.options, function(error, result){
       if(error){
         throw error;
       };

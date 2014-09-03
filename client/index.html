@@ -42,7 +42,7 @@
 
 <template name="list">
   {{#if loading}}
-    <div class="">
+    <div class="loading">
       Loading...
     </div>
   {{else}}
@@ -56,7 +56,7 @@
         </li>
         {{#each tests}}
           <li class="{{active}}"><a href="{{_id}}" data-id="{{_id}}">
-            {{#if normative}}
+            {{#if hasNormative}}
               {{#if lastPassed}}
                 <span class="badge badge-success"><i class="icon-ok-circle"></i></span>
               {{else}}
@@ -76,71 +76,78 @@
 
 <template name="details">
   <div class="span7">
-    {{#if test}}
-      {{#with test}}
-        <h2>{{title}}</h2>
-        <p>{{description}}</p>
-        {{#if hasNormative}}
-        {{else}}
-          <div class="alert">
-            This test needs to have normative styles extracted before it can be run.
-          </div>
-        {{/if}}
-        <div class="btn-group">
+    {{#if loading}}
+      <div class="loading">
+        Loading...
+      </div>
+    {{else}}
+      {{#if test}}
+        {{#with test}}
+          <h2>{{title}}</h2>
+          <p>{{description}}</p>
           {{#if hasNormative}}
-            <button class="btn run btn-primary">Run Test</button>
+          {{else}}
+            <div class="alert">
+              This test needs to have normative styles extracted before it can be run.
+            </div>
           {{/if}}
-          <button class="btn extract">Extract Computed Styles as Normative</button>
-          <button class="btn edit">Edit</button>
-          <button class="btn delete">Delete</button>
-        </div>
-        <iframe id="test-frame-{{_id}}"></iframe>
-        {{fillFrame}}
-        {{#if history}}
-          <div class="test-history">
-            <h3>History</h3>
-            <ul>
-              {{#each history}}
-                <li>
-                {{#if passed}}
-                  <span class="badge badge-success">
-                    <i class="icon-ok-circle"></i>
-                  </span>
-                  Passed on {{time}}
-                {{else}}
-                  <span class="badge badge-warning">
-                    <i class="icon-fire"></i>
-                  </span>
-                  <span class="status">Failed on {{time}}</span>
-                  <a class="expand-failures" href="#">Details</a>
-                  <ul class="failures">
-                    {{#each failures}}
-                      <li data-selector="{{selector}}" class="clearfix">
-                        <a href="#" class="failure-el" title="Highlight element in preview">
-                          {{selector}}
-                        </a>
-                        {{#each instances}}
-                        <dl>
-                          <dt>Screen Width</dt>
-                          <dd class="width">{{width}}</dd>
-                          <dt>Property Name</dt>
-                          <dd class="name">{{key}}</dd>
-                          <dt>Expected Value</dt>
-                          <dd class="expected">{{aVal}}</dd>
-                          <dt>Actual Value</dt>
-                          <dd class="actual">{{bVal}}</dd>
-                        </dl>
-                        {{/each}}
-                      </li>
-                    {{/each}}
-                  </ul>
-                {{/if}}
-                </li>
-              {{/each}}
-            </ul>
+          <div class="btn-group">
+            {{#if hasNormative}}
+              <button class="btn run btn-primary">Run Test</button>
+            {{/if}}
+            <button class="btn extract">Extract Computed Styles as Normative</button>
+            <button class="btn edit">Edit</button>
+            <button class="btn delete">Delete</button>
           </div>
-        {{/if}}
-      {{/with}}
+          <iframe id="test-frame-{{_id}}"></iframe>
+          {{fillFrame}}
+          {{#if history}}
+            <div class="test-history">
+              <h3>History</h3>
+              <ul>
+                {{#each history}}
+                  <li>
+                  {{#if passed}}
+                    <span class="badge badge-success">
+                      <i class="icon-ok-circle"></i>
+                    </span>
+                    Passed on {{time}}
+                  {{else}}
+                    <span class="badge badge-warning">
+                      <i class="icon-fire"></i>
+                    </span>
+                    <span class="status">Failed on {{time}}</span>
+                    <a class="expand-failures" href="#">Details</a>
+                    {{#each failures}}
+                      <h4>{{width}}</h4>
+                      <ul class="failures">
+                        {{#each elements}}
+                          <li data-selector="{{selector}}" class="clearfix">
+                            <a href="#" class="failure-el" title="Highlight element in preview">
+                              {{selector}}
+                            </a>
+                            {{#each instances}}
+                            <dl>
+                              <dt>Property Name</dt>
+                              <dd class="name">{{key}}</dd>
+                              <dt>Expected Value</dt>
+                              <dd class="expected">{{aVal}}</dd>
+                              <dt>Actual Value</dt>
+                              <dd class="actual">{{bVal}}</dd>
+                            </dl>
+                            {{/each}}
+                          </li>
+                        {{/each}}
+                      </ul>
+                    {{/each}}
+                  {{/if}}
+                  </li>
+                {{/each}}
+              </ul>
+            </div>
+          {{/if}}
+        {{/with}}
+      {{/if}}
     {{/if}}
   </div>
 </template>

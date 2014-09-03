@@ -54,7 +54,8 @@ Template.list.renderSortable = function(){
   }, 10);
 };
 
-Template.list.loading = function () {
+Template.list.loading =
+Template.details.loading = function () {
   return !testCasesHandle.ready();
 };
 Template.list.tests = function(){
@@ -71,6 +72,7 @@ Template.list.active = function () {
 
 var setSelected = function(id){
   Session.set('selected', id);
+  Session.set('history', undefined);
   window.history.pushState('','',id);
 };
 
@@ -83,98 +85,87 @@ Template.list.events({
 });
 
 Template.details.test = function(){
-  var result = TestCases.findOne(Session.get("selected"));
-  if(result && result.history){
-    result.history = result.history.reverse();
-    
-    var organizeBySelector = function(failures){
-      var o = {};
-      _.each(failures, function(a, width){
-        if(a.forEach === undefined){
-          // back-compat for mono-width test results
-          return;
-        };
-        a.forEach(function(failure){
-          if(!o.hasOwnProperty(failure['selector'])){
-            o[failure['selector']] = {
+  var test = new TestCases.TestCase(Session.get("selected"));
+  if(test.notFound){
+    return;
+  };
+  // Tranlate history data structure into one more template friendly
+  var objToArray = function(obj){
+    var arr = [];
+    _.each(obj, function(item){
+      arr.push(item);
+    });
+    return arr;
+  };
+  test.getHistory(function(error, history){
+    if(history){
+      history = history.reverse();
+      
+      var organizeBySelector = function(arr){
+        var out = {};
+        arr.forEach(function(failure){
+          if(!out.hasOwnProperty(failure['selector'])){
+            out[failure['selector']] = {
               selector: failure['selector'],
               instances: []
             };
           };
-          o[failure['selector']].instances.push(_.extend({width: width}, failure));
+          out[failure['selector']].instances.push(failure);
         });
+        return objToArray(out);
+      };
+
+
+      history.forEach(function(testStatus){
+        _.each(testStatus.failures, function(elements, width){
+          testStatus.failures[width] = {elements: organizeBySelector(elements),
+                                        width: width};
+        });
+        testStatus.failures = objToArray(testStatus.failures);
       });
-      var sorted = [];
-      _.each(o, function(failure){
-        sorted.push(failure);
-      });
-      return sorted;
+      Session.set('history', history);
     };
+  });
+  return test;
+};
 
-
-    result.history.forEach(function(testStatus){
-      testStatus.failures = organizeBySelector(testStatus.failures);
-    });
-  };
-  return result;
+Template.details.history = function(){
+  return Session.get('history');
 };
 
 Template.details.fillFrame = function(){
   var test = this;
+  if(test.notFound){
+    return;
+  };
   setTimeout(function(){
-    var linkTags = [];
-    test.cssFiles.split('\n').forEach(function(href){
-      linkTags.push('<link href="' + href + '?' + Date.now() + 
-                    ' type="text/css" rel="stylesheet" />');
-    });
     var frameId = 'test-frame-' + test._id,
-        frameDoc = document.getElementById(frameId).contentWindow.document,
-        frameHTML = ['<html>',
-                     '<head>',
-                     linkTags.join('\n'),
-                     '<style>',
-                     '.failure-' + frameId + ' { outline: 2px solid #ff0; }',
-                     '</style>',
-                     '</head>',
-                     '<body>',
-                     test.fixtureHTML,
-                     '</body>',
-                     '</html>'].join('\n');
+        frameDoc = document.getElementById(frameId).contentWindow.document;
     frameDoc.open();
-    frameDoc.write(frameHTML);
+    frameDoc.write(test.getHTML());
     frameDoc.close();
   }, 10);
 };
 
-Template.details.hasNormative = function(){
-  return !!this.normative;
-};
-
 Template.details.events({
-  'click button.run': function(){
+  'click button.run': function(e){
     var test = this,
-        frameId = 'test-frame-' + test._id,
-        frameDoc = document.getElementById(frameId).contentWindow.document,
-        normative = JSON.parse(test.normative),
-        currentData = CssTest.extractComputedStyles(frameDoc.body,'BODY'),
-        failures = CssTest.compareStyles(normative, currentData),
-        report = {time: new Date(), 
-                  passed: failures.length === 0,
-                  failures: failures};
-    if(test.history !== undefined && test.history.length !== undefined){
-      TestCases.update(test._id, {$push: {history: report}});
-    }else{
-      TestCases.update(test._id, {$set: {history: [report]}});
-    };
-    TestCases.update(test._id, {$set: {lastPassed: report.passed}});
+        $el = $(e.currentTarget);
+    $el.addClass('disabled');
+    this.run(function(error, result){
+      $el.removeClass('disabled');
+      if(result){
+        // Update session array
+        Template.details.test();
+      };
+    });
   },
-  'click button.extract': function(){
-    var test = this,
-        frameId = 'test-frame-' + test._id,
-        frameDoc = document.getElementById(frameId).contentWindow.document,
-        data = CssTest.extractComputedStyles(frameDoc.body,'BODY'),
-        asString = JSON.stringify(data);
-    TestCases.update(test._id, {$set: {normative: asString}});
+  'click button.extract': function(e){
+    var $el = $(e.currentTarget);
+    $el.addClass('disabled');
+    this.setNormative(function(error, result){
+      $el.removeClass('disabled');
+    });
   },
   'click button.edit': openEditDialog,
   'click button.delete': function(){
@@ -188,7 +179,7 @@ Template.details.events({
     event.preventDefault();
   },
   'click a.failure-el': function(event){
-    var test = TestCases.findOne(Session.get('selected')),
+    var test = new TestCases.TestCase(Session.get('selected')),
         selector = $(event.currentTarget).parent().attr('data-selector'),
         frameId = 'test-frame-' + test._id,
         failureClass = 'failure-' + frameId,
@@ -218,7 +209,7 @@ Template.modifyDialog.fieldValue = function(data){
 Template.modifyDialog.test = Template.deleteDialog.test = function(){
   var id = Session.get("selected");
   if(id){
-    return TestCases.findOne(id);
+    return new TestCases.TestCase(id);
   }else{
     // No test result when nothing selected
     return {};

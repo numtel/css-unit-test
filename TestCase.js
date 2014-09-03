@@ -2,12 +2,14 @@
  * TestCase Class
  *
  * TestCase.getHTML()
- * TestCase.extractStylesAsync(function(value){})
- * TestCase.setNormative(value)
- * TestCase.loadLatestNormative(function(normative[]){})
-    - Callback only on client, sync'd on server
- * TestCase.loadAllNormatives(function(normative[]){})
-    - Callback only on client, sync'd on server
+ * TestCase.extractStyles(function(err, value){})
+ * TestCase.setNormative(value, function(err, result){})
+ * TestCase.loadLatestNormative(function(err, normative[]){})
+    - Callback only required on client, sync'd return on server
+ * TestCase.loadAllNormatives(function(err, normative[]){})
+    - Callback only required on client, sync'd return on server
+ * TestCase.run(function(err, report){})
+ * TestCase.getHistory(function(err, history){})
  *
  */
 TestCases.TestCase = function(id){
@@ -15,16 +17,45 @@ TestCases.TestCase = function(id){
     // TODO: Prepare new TestCase
   }else{
     var data = TestCases.findOne(id);
-    if(data === undefined){
-      throw new Meteor.Error(404, "TestCase not found");
+    if(data === undefined || data.owner !== Meteor.userId()){
+      this.notFound = true;
+      return;
     };
   };
 
   _.extend(this, data);
   // Convert widths string into array
-  this.widths = this.widths.split(',').map(function(width){
+  this.widthsArray = this.widths.split(',').map(function(width){
     return parseInt(width.trim(), 10);
   });
+};
+
+TestCases.TestCase.prototype.setData = function(data, callback){
+  var that = this;
+  if(Meteor.isServer){
+    // Require new normative if these fields change
+    ['cssFiles', 'widths', 'fixtureHTML'].forEach(function(field){
+      if(data[field] !== undefined && data[field] !== that[field]){
+        data.hasNormative = false;
+      };
+    });
+
+    TestCases.update(this._id, {$set: data}, {}, function(error, result){
+      if(callback){
+        callback.call(this, error, result);
+      };
+    });
+  }else if(Meteor.isClient){
+    Meteor.call('setData', {id: this._id, data: data}, function(error, result){
+      if(error){
+        console.log('setData Failed!', error, result);
+        return;
+      };
+      if(callback){
+        callback.call(that, error, result);
+      };
+    });
+  };
 };
 
 TestCases.TestCase.prototype.getHTML = function(){
@@ -49,7 +80,7 @@ TestCases.TestCase.prototype.getHTML = function(){
   return frameHTML;
 };
 
-TestCases.TestCase.prototype.extractStylesAsync = function(callback){
+TestCases.TestCase.prototype.extractStyles = function(callback){
   var that = this;
   if(Meteor.isServer){
     var phantomjs = Npm.require('phantomjs');
@@ -64,13 +95,15 @@ TestCases.TestCase.prototype.extractStylesAsync = function(callback){
         var phantomReturn = function(width, styles){
           returned[width] = styles;
           returnCount++;
-          if(returnCount === that.widths.length){
+          if(returnCount === that.widthsArray.length){
             // Delete html file
             fs.unlink(htmlFile);
-            callback.call(that, undefined, returned);
+            if(callback){
+              callback.call(that, undefined, returned);
+            };
           };
         };
-        that.widths.forEach(function(testWidth){
+        that.widthsArray.forEach(function(testWidth){
           command = shell.spawn(phantomjs.path, 
             ['assets/app/phantomDriver.js', htmlFile, testWidth]);
 
@@ -99,12 +132,14 @@ TestCases.TestCase.prototype.extractStylesAsync = function(callback){
       };
     });
   }else if(Meteor.isClient){
-    Meteor.call('extractStyles', this._id, function(error, result){
+    Meteor.call('extractStyles', {id: this._id}, function(error, result){
       if(error){
         console.log('extractStyles Failed!', error, result);
         return;
       };
-      callback.call(that, error, result);
+      if(callback){
+        callback.call(that, error, result);
+      };
     });
   };
 };
@@ -121,7 +156,7 @@ TestCases.TestCase.prototype.setNormative = function(value, callback){
       // If no normative is spec'd then grab current
       var Future = Npm.require('fibers/future');
       var fut = new Future();
-      this.extractStylesAsync(Meteor.bindEnvironment(function(error, result){
+      this.extractStyles(Meteor.bindEnvironment(function(error, result){
         if(error){
           throw error;
         };
@@ -139,6 +174,7 @@ TestCases.TestCase.prototype.setNormative = function(value, callback){
       value: value
     }
     TestNormatives.insert(insertData);
+    TestCases.update(that._id, {$set: {hasNormative: true}});
     if(callback){
       callback.call(that, error, result);
     };
@@ -149,7 +185,9 @@ TestCases.TestCase.prototype.setNormative = function(value, callback){
         console.log('setNormative Failed!', error, result);
         return;
       };
-      callback.call(that, error, result);
+      if(callback){
+        callback.call(that, error, result);
+      };
     });
   };
 };
@@ -179,7 +217,9 @@ if(Meteor.isServer){
           console.log(func + ' Failed!', error, result);
           return;
         };
-        callback.call(that, error, result);
+        if(callback){
+          callback.call(that, error, result);
+        };
       });
     };
   });
@@ -245,19 +285,19 @@ TestCases.TestCase.prototype.run = function(options, callback){
     if(typeof options !== 'object'){
       options = {};
     };
-    if(options.widths === undefined){
-      options.widths = this.widths;
-    };
+    // Currently, no options to set...
 
     var normative = this.loadLatestNormative();
     if(normative.length === 0){
       throw 'No normative exists!';
     };
 
-    this.extractStylesAsync(Meteor.bindEnvironment(function(error, styles){
+    this.extractStyles(Meteor.bindEnvironment(function(error, styles){
       if(error){
         throw error;
       };
+      console.log(normative[0].value['1024'][0].attributes);
+      console.log(styles['1024'][0].attributes);
       var failures = {};
       _.each(styles, function(viewStyles, viewWidth){
         if(normative[0].value[viewWidth] === undefined){
@@ -280,7 +320,9 @@ TestCases.TestCase.prototype.run = function(options, callback){
         TestCases.update(that._id, {$set: {history: [report]}});
       };
       TestCases.update(that._id, {$set: {lastPassed: report.passed}});
-      callback.call(that, undefined, report);
+      if(callback){
+        callback.call(that, undefined, report);
+      };
     }));
   }else if(Meteor.isClient){
     Meteor.call('run', {id: this._id, options: options}, function(error, result){
@@ -288,7 +330,26 @@ TestCases.TestCase.prototype.run = function(options, callback){
         console.log('Run Failed!', error, result);
         console.log(error.get_stack());
       };
-      callback.call(that, error, result);
+      if(callback){
+        callback.call(that, error, result);
+      };
+    });
+  };
+};
+
+
+TestCases.TestCase.prototype.getHistory = function(callback){
+  var that = this;
+  if(Meteor.isServer){
+    if(callback){
+      callback.call(that, undefined, this.history);
+    };
+    return this.history;
+  }else if(Meteor.isClient){
+    Meteor.call('getHistory', {id: this._id}, function(error, result){
+      if(callback){
+        callback.call(that, error, result);
+      };
     });
   };
 };

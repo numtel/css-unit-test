@@ -94,18 +94,21 @@ Meteor.methods({
   editTest: function (options) {
     validatePost(options, false);
 
-    var current = TestCases.findOne(options._id);
+    var current = new TestCases.TestCase(options._id);
 
-    if (! this.userId || current.owner !== this.userId)
-      throw new Meteor.Error(403, "Only owner can edit test case");
+    if (current.notFound)
+      throw new Meteor.Error(403, "Invalid test case");
 
-    TestCases.update(options._id, {$set: {
+    var data = {
       title: options.title,
       description: options.description,
       cssFiles: options.cssFiles,
       widths: options.widths,
-      fixtureHTML: options.fixtureHTML
-    }});
+      fixtureHTML: options.fixtureHTML,
+    };
+
+    current.setData(data);
+
     return options._id;
   }
 });

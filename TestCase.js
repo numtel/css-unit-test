@@ -78,9 +78,11 @@ TestCases.TestCase.prototype.extractStylesAsync = function(callback){
             var outFile = htmlFile.replace('.html', '-' + testWidth + '.out'),
                 outContents = fs.readFileSync(outFile),
                 styles = JSON.parse(outContents);
-            callback.call(that, styles);
+            callback.call(that, undefined, styles);
             // Delete html, output file
             [outFile, htmlFile].forEach(fs.unlinkSync);
+          }else{
+            callback.call(that, code, undefined);
           };
         });
       };
@@ -91,7 +93,7 @@ TestCases.TestCase.prototype.extractStylesAsync = function(callback){
         console.log('extractStyles Failed!', error, result);
         return;
       };
-      callback.call(that, result);
+      callback.call(that, error, result);
     });
   };
 };
@@ -101,7 +103,10 @@ TestCases.TestCase.prototype.setNormative = function(value){
   if(Meteor.isServer){
     if(value === undefined){
       // If no normative is spec'd then grab current
-      this.extractStylesAsync(Meteor.bindEnvironment(function(result){
+      this.extractStylesAsync(Meteor.bindEnvironment(function(error, result){
+        if(error){
+          throw error;
+        };
         that.setNormative(result);
       }));
       return;
@@ -152,8 +157,105 @@ if(Meteor.isServer){
           console.log(func + ' Failed!', error, result);
           return;
         };
-        callback.call(that, result);
+        callback.call(that, error, result);
       });
     };
   });
+};
+
+var flattenArray = function(a){
+  var b = [];
+  a.forEach(function(item){
+    if(item.children.length){
+      var recursed = flattenArray(item.children);
+      b = b.concat(recursed);
+    };
+    item.children = undefined;
+  });
+  return a.concat(b);
+};
+
+var compareStyles = function(a, b){
+  var filterRules = [];
+  var failures = [];
+
+  // Do this without recursion
+  a=flattenArray(a);
+  b=flattenArray(b);
+
+  if(a.length !== b.length){
+    throw 'Fixture changed! New normative needed!';
+  };
+
+  for(var i = 0; i<a.length; i++){
+    _.each(a[i].attributes, function(aVal, key){
+      var skip;
+      filterRules.forEach(function(rule){
+        if(rule.test(key)){
+          skip = true;
+        };
+      });
+      if(skip){
+        return;
+      };
+      var bVal = b[i].attributes[key];
+      if(bVal !== aVal){
+        failures.push({
+          'selector': a[i].selector,
+          'key': key,
+          'aVal': aVal,
+          'bVal': bVal
+        });
+      };
+    });
+  };
+  return failures;
+};
+
+TestCases.TestCase.prototype.run = function(options, callback){
+  var that = this;
+  if(Meteor.isServer){
+    if(typeof options !== 'object'){
+      options = {};
+    };
+    if(options.widths === undefined){
+      options.widths = this.widths;
+    };
+
+    var normative = this.loadLatestNormative();
+    if(normative.length === 0){
+      throw 'No normative exists!';
+    };
+
+    this.extractStylesAsync(Meteor.bindEnvironment(function(error, styles){
+      if(error){
+        throw error;
+      };
+      var failures = compareStyles(normative[0].value, styles);
+      
+      var report = {time: new Date(), 
+                    passed: failures.length === 0,
+                    failures: failures};
+      if(that.history !== undefined && that.history.length !== undefined){
+        TestCases.update(that._id, {$push: {history: report}});
+      }else{
+        TestCases.update(that._id, {$set: {history: [report]}});
+      };
+      TestCases.update(that._id, {$set: {lastPassed: report.passed}});
+      callback.call(that, undefined, report);
+    }));
+  }else if(Meteor.isClient){
+    if(typeof options === 'function'){
+      // Options ommitted
+      callback = options;
+      options = {};
+    };
+    Meteor.call('run', {id: this._id, options: options}, function(error, result){
+      if(error){
+        console.log('Run Failed!', error, result);
+        console.log(error.get_stack());
+      };
+      callback.call(that, error, result);
+    });
+  };
 };

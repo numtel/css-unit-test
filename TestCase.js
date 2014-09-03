@@ -60,30 +60,41 @@ TestCases.TestCase.prototype.extractStylesAsync = function(callback){
       if(err){
         console.log(err);
       }else{
-        var testWidth = 1024;
-        command = shell.spawn(phantomjs.path, 
-          ['assets/app/phantomDriver.js', htmlFile, testWidth]);
-
-
-        command.stdout.on('data', function(data){
-          console.log('PhantomJS stdout: ' + data);
-        });
-
-        command.stderr.on('data', function(data){
-          console.log('PhantomJS stderr: ' + data);
-        });
-
-        command.on('exit', function(code) {
-          if(code === 0){
-            var outFile = htmlFile.replace('.html', '-' + testWidth + '.out'),
-                outContents = fs.readFileSync(outFile),
-                styles = JSON.parse(outContents);
-            callback.call(that, undefined, styles);
-            // Delete html, output file
-            [outFile, htmlFile].forEach(fs.unlinkSync);
-          }else{
-            callback.call(that, code, undefined);
+        var returned = {}, returnCount = 0;
+        var phantomReturn = function(width, styles){
+          returned[width] = styles;
+          returnCount++;
+          if(returnCount === that.widths.length){
+            // Delete html file
+            fs.unlink(htmlFile);
+            callback.call(that, undefined, returned);
           };
+        };
+        that.widths.forEach(function(testWidth){
+          command = shell.spawn(phantomjs.path, 
+            ['assets/app/phantomDriver.js', htmlFile, testWidth]);
+
+
+          command.stdout.on('data', function(data){
+            console.log('PhantomJS stdout: ' + data);
+          });
+
+          command.stderr.on('data', function(data){
+            console.log('PhantomJS stderr: ' + data);
+          });
+
+          command.on('exit', function(code) {
+            if(code === 0){
+              var outFile = htmlFile.replace('.html', '-' + testWidth + '.out'),
+                  outContents = fs.readFileSync(outFile),
+                  styles = JSON.parse(outContents);
+              phantomReturn(testWidth, styles);
+              // Delete output file
+              fs.unlink(outFile);
+            }else{
+              throw 'PhantomJS Error ' + code;
+            };
+          });
         });
       };
     });
@@ -98,18 +109,25 @@ TestCases.TestCase.prototype.extractStylesAsync = function(callback){
   };
 };
 
-TestCases.TestCase.prototype.setNormative = function(value){
+TestCases.TestCase.prototype.setNormative = function(value, callback){
   var that = this;
+  if(typeof value === 'function'){
+    // Value ommitted, only callback supplied
+    callback = value;
+    value = undefined;
+  };
   if(Meteor.isServer){
     if(value === undefined){
       // If no normative is spec'd then grab current
+      var Future = Npm.require('fibers/future');
+      var fut = new Future();
       this.extractStylesAsync(Meteor.bindEnvironment(function(error, result){
         if(error){
           throw error;
         };
-        that.setNormative(result);
+        fut['return'](that.setNormative(result, callback));
       }));
-      return;
+      return fut.wait();
     };
 
     var id = Random.id();
@@ -121,6 +139,9 @@ TestCases.TestCase.prototype.setNormative = function(value){
       value: value
     }
     TestNormatives.insert(insertData);
+    if(callback){
+      callback.call(that, error, result);
+    };
     return id;
   }else if(Meteor.isClient){
     Meteor.call('setNormative', {id: this._id, value: value}, function(error, result){
@@ -128,15 +149,16 @@ TestCases.TestCase.prototype.setNormative = function(value){
         console.log('setNormative Failed!', error, result);
         return;
       };
+      callback.call(that, error, result);
     });
   };
 };
 
 if(Meteor.isServer){
   var loadNormatives = function(options){
-    _.extend({
+    options = _.extend(options || {}, {
       sort: {timestamp:-1}
-    }, options);
+    });
     return TestNormatives.find({testCase: this._id}, options).fetch();
   };
 
@@ -214,6 +236,11 @@ var compareStyles = function(a, b){
 
 TestCases.TestCase.prototype.run = function(options, callback){
   var that = this;
+  if(typeof options === 'function'){
+    // Options ommitted, only callback supplied
+    callback = options;
+    options = {};
+  };
   if(Meteor.isServer){
     if(typeof options !== 'object'){
       options = {};
@@ -231,10 +258,21 @@ TestCases.TestCase.prototype.run = function(options, callback){
       if(error){
         throw error;
       };
-      var failures = compareStyles(normative[0].value, styles);
+      var failures = {};
+      _.each(styles, function(viewStyles, viewWidth){
+        if(normative[0].value[viewWidth] === undefined){
+          throw 'Normative widths mismatch!';
+        };
+        failures[viewWidth] = compareStyles(normative[0].value[viewWidth], viewStyles);
+      });
       
+      var totalFailures = 0;
+      _.each(failures, function(viewFailures, viewWidth){
+        totalFailures += viewFailures.length;
+      });
       var report = {time: new Date(), 
-                    passed: failures.length === 0,
+                    passed: totalFailures === 0,
+                    normative: normative[0]._id,
                     failures: failures};
       if(that.history !== undefined && that.history.length !== undefined){
         TestCases.update(that._id, {$push: {history: report}});
@@ -245,11 +283,6 @@ TestCases.TestCase.prototype.run = function(options, callback){
       callback.call(that, undefined, report);
     }));
   }else if(Meteor.isClient){
-    if(typeof options === 'function'){
-      // Options ommitted
-      callback = options;
-      options = {};
-    };
     Meteor.call('run', {id: this._id, options: options}, function(error, result){
       if(error){
         console.log('Run Failed!', error, result);

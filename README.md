@@ -1,6 +1,8 @@
 css-unit-test
 =============
 
+**Not yet functional, check back soon!**
+
 CSS Unit Test Application (made with Meteor)
 
 Installation

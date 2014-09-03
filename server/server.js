@@ -25,7 +25,7 @@ Meteor.methods({
   },
   setNormative: function(options){
     var test = new TestCases.TestCase(options.id);
-    test.setNormative(options.value);
+    return test.setNormative(options.value);
   },
   loadLatestNormative: function(options){
     var test = new TestCases.TestCase(options.id);

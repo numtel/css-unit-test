@@ -87,16 +87,22 @@ Template.details.test = function(){
   if(result && result.history){
     result.history = result.history.reverse();
     
-    var organizeBySelector = function(a){
+    var organizeBySelector = function(failures){
       var o = {};
-      a.forEach(function(failure){
-        if(!o.hasOwnProperty(failure['selector'])){
-          o[failure['selector']] = {
-            selector: failure['selector'],
-            instances: []
-          };
+      _.each(failures, function(a, width){
+        if(a.forEach === undefined){
+          // back-compat for mono-width test results
+          return;
         };
-        o[failure['selector']].instances.push(failure);
+        a.forEach(function(failure){
+          if(!o.hasOwnProperty(failure['selector'])){
+            o[failure['selector']] = {
+              selector: failure['selector'],
+              instances: []
+            };
+          };
+          o[failure['selector']].instances.push(_.extend({width: width}, failure));
+        });
       });
       var sorted = [];
       _.each(o, function(failure){
@@ -104,6 +110,7 @@ Template.details.test = function(){
       });
       return sorted;
     };
+
 
     result.history.forEach(function(testStatus){
       testStatus.failures = organizeBySelector(testStatus.failures);

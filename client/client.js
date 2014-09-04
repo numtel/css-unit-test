@@ -106,6 +106,9 @@ Template.details.test = function(noHistory){
   var objToArray = function(obj){
     var arr = [];
     _.each(obj, function(item){
+      if(arr.length === 0){
+        item['first'] = true;
+      };
       arr.push(item);
     });
     return arr;
@@ -135,8 +138,45 @@ Template.details.test = function(noHistory){
             testStatus.failures[width] = {elements: organizeBySelector(elements),
                                           width: width,
                                           runId: testStatus.id};
+            testStatus.failures[width].elements.forEach(function(element){
+              // Propagate values to children
+              ['width', 'runId'].forEach(function(key){
+                element[key] = testStatus.failures[width][key];
+              });
+            });
           });
           testStatus.failures = objToArray(testStatus.failures);
+
+          // Remove view widths without failures
+          var activeFailures = [];
+          testStatus.failures.forEach(function(failure){
+            if(failure.elements.length > 0){
+              if(activeFailures.length === 0){
+                failure.first = true;
+              };
+              activeFailures.push(failure);
+            };
+          });
+          testStatus.failures = activeFailures;
+
+          test.loadNormative(testStatus.normative, function(error, result){
+            if(error){
+              throw error;
+            };
+            _.each(testStatus.failures, function(failure){
+              var expected = test.getHTML({
+                fixtureHTML: testStatus.fixtureHTML,
+                normativeValue: result[0].value[failure.width]
+              });
+              Session.set('expected-' + testStatus.id + '-' + failure.width, expected);
+              var reported = test.getHTML({
+                fixtureHTML: testStatus.fixtureHTML,
+                normativeValue: result[0].value[failure.width],
+                diff:  failure.elements
+              });
+              Session.set('reported-' + testStatus.id + '-' + failure.width, reported);
+            });
+          });
         });
         Session.set('history', history);
       };
@@ -202,17 +242,37 @@ Template.details.events({
   }
 });
 
+Template.historyDetails.fillFrame = function(){
+  var failure = this,
+      frames = ['expected-' + failure.runId + '-' + failure.width,
+                'reported-' + failure.runId + '-' + failure.width],
+      htmlReady = Session.get(frames[0]);
+  if(htmlReady){
+    setTimeout(function(){
+      frames.forEach(function(frameId){
+        var frameDoc = document.getElementById(frameId).contentWindow.document;
+        frameDoc.open();
+        frameDoc.write(Session.get(frameId));
+        frameDoc.close();
+      });
+    }, 10);
+  };
+};
+
 Template.historyDetails.events({
   'click a.failure-el': function(event){
-    var test = new TestCases.TestCase(Session.get('selected')),
-        selector = $(event.currentTarget).parent().attr('data-selector'),
-        frameId = 'test-frame-' + test._id,
-        failureClass = 'failure-' + frameId,
-        $frameDoc = $('#' + frameId).contents(),
-        $el = $frameDoc.find(selector);
-    $frameDoc.find('.' + failureClass).removeClass(failureClass);
-    $el.addClass(failureClass);
     event.preventDefault();
+    var failure = this,
+        selector = $(event.currentTarget).parent().attr('data-selector'),
+        frames = ['expected-' + failure.runId + '-' + failure.width,
+                  'reported-' + failure.runId + '-' + failure.width],
+        failureClass = 'steez-highlight-failure';
+    frames.forEach(function(frameId){
+      var $frameDoc = $('#' + frameId).contents(),
+          $el = $frameDoc.find(selector);
+      $frameDoc.find('.' + failureClass).removeClass(failureClass);
+      $el.addClass(failureClass);
+    });
   }
 });
 

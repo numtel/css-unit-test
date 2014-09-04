@@ -55,6 +55,9 @@ Meteor.methods({
   loadAllNormatives: function(options){
     return loadTest(options.id).loadAllNormatives();
   },
+  loadNormative: function(options){
+    return loadTest(options.id).loadNormative(options.options);
+  },
   run: function(options){
     var fut = new Future();
     loadTest(options.id).run(options.options, function(error, result){

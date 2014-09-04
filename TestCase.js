@@ -58,23 +58,57 @@ TestCases.TestCase.prototype.setData = function(data, callback){
   };
 };
 
-TestCases.TestCase.prototype.getHTML = function(){
-  var linkTags = [];
-  this.cssFiles.split('\n').forEach(function(href){
-    linkTags.push('<link href="' + href + '?' + Date.now() + '" ' +
-                  'type="text/css" rel="stylesheet" />');
+TestCases.TestCase.prototype.getHTML = function(options){
+  options = _.defaults(options || {}, {
+    fixtureHTML: this.fixtureHTML,
+    normativeValue: undefined,
+    diff: undefined
   });
+
+  var head;
+  if(options.normativeValue === undefined){
+    // Use spec'd css
+    var linkTags = [];
+    this.cssFiles.split('\n').forEach(function(href){
+      linkTags.push('<link href="' + href + '?' + Date.now() + '" ' +
+                    'type="text/css" rel="stylesheet" />');
+    });
+    head = linkTags.join('\n');
+  }else{
+    // Styles are coming from expectations
+    var elements = flattenArray(options.normativeValue),
+        style = ['<style>'];
+    elements.forEach(function(element){
+      if(options.diff){
+        options.diff.forEach(function(diffItem){
+          if(diffItem.selector === element.selector){
+            diffItem.instances.forEach(function(instance){
+              element.attributes[instance.key] = instance.bVal;
+            });
+          };
+        });
+      };
+      var rule = element.selector + '{';
+      _.each(element.attributes, function(val, key){
+        rule += key + ': ' + val + '; ';
+      });
+      rule += '}';
+      style.push(rule);
+    });
+    style.push('</style>');
+    head = style.join('\n');
+  };
   var frameId = 'test-frame-' + this._id,
       frameHTML = [
        '<html>',
        '<head>',
-       linkTags.join('\n'),
+       head,
        '<style>',
-       '.failure-' + frameId + ' { outline: 2px solid #ff0; }',
+       '.steez-highlight-failure { outline: 2px solid #ff0 !important; }',
        '</style>',
        '</head>',
        '<body>',
-       this.fixtureHTML,
+       options.fixtureHTML,
        '</body>',
        '</html>'].join('\n');
   return frameHTML;
@@ -193,15 +227,20 @@ TestCases.TestCase.prototype.setNormative = function(value, callback){
 };
 
 if(Meteor.isServer){
-  var loadNormatives = function(options){
-    options = _.extend(options || {}, {
+  var loadNormatives = function(options, query){
+    options = _.defaults(options || {}, {
       sort: {timestamp:-1}
     });
-    return TestNormatives.find({testCase: this._id}, options).fetch();
+    query = _.defaults(query || {}, {testCase: this._id});
+    return TestNormatives.find(query, options).fetch();
   };
 
   TestCases.TestCase.prototype.loadLatestNormative = function(){
     return loadNormatives.call(this, {limit: 1});
+  };
+
+  TestCases.TestCase.prototype.loadNormative = function(id){
+    return loadNormatives.call(this, {limit: 1}, {_id: id});
   };
 
   TestCases.TestCase.prototype.loadAllNormatives = function(){
@@ -215,7 +254,6 @@ if(Meteor.isServer){
       Meteor.call(func, {id: this._id}, function(error, result){
         if(error){
           console.log(func + ' Failed!', error, result);
-          return;
         };
         if(callback){
           callback.call(that, error, result);
@@ -223,9 +261,25 @@ if(Meteor.isServer){
       });
     };
   });
+  // Methods that have a parameter
+  ['loadNormative'].forEach(function(func){
+    TestCases.TestCase.prototype[func] = function(options, callback){
+      var that = this;
+      Meteor.call(func, {id: this._id, options: options}, function(error, result){
+        if(error){
+          console.log(func + ' Failed!', error, result);
+        };
+        if(callback){
+          callback.call(that, error, result);
+        };
+      });
+    };
+  });
+
 };
 
 var flattenArray = function(a){
+  a = _.map(a, _.clone);
   var b = [];
   a.forEach(function(item){
     if(item.children.length){

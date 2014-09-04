@@ -127,7 +127,7 @@
                         <ul class="nav nav-tabs">
                           <li class="descriptor">Viewport width:</li>
                           {{#each failures}}
-                            <li>
+                            <li class="{{#if first}}active{{/if}}">
                               <a href="#failure-{{runId}}-{{width}}" data-toggle="tab">
                                 {{width}}
                               </a>
@@ -152,7 +152,23 @@
 </template>
 
 <template name="historyDetails">
-  <div class="failure" id="failure-{{runId}}-{{width}}">
+  <div class="failure {{#if first}}active{{/if}}" id="failure-{{runId}}-{{width}}">
+    <ul class="nav nav-tabs">
+      <li class="descriptor">Preview:</li>
+      <li class="active">
+        <a href="#reported-{{runId}}-{{width}}" data-toggle="tab">
+          Reported
+        </a>
+      </li>
+      <li class="">
+        <a href="#expected-{{runId}}-{{width}}" data-toggle="tab">
+          Expected
+        </a>
+      </li>
+    </ul>
+    <iframe class="active" id="reported-{{runId}}-{{width}}" width="{{width}}"></iframe>
+    <iframe id="expected-{{runId}}-{{width}}" width="{{width}}"></iframe>
+    {{fillFrame}}
     <ul class="failures">
       {{#each elements}}
         <li data-selector="{{selector}}" class="clearfix">

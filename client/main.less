@@ -18,22 +18,40 @@ iframe {
   margin-top:10px;
 }
 
-.test-history {
-  li {
-    list-style:none;
-    clear:both;
-    border-bottom: 1px solid #ccc;
+.modify {
+  label {
+    font-weight:bold;
   }
+  .help-block {
+    font-size:12px;
+    color:#999;
+    margin-top:-10px;
+  }
+  textarea.fixture-html,
+  textarea.css-files {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+    height: 100px;
+  }
+  textarea.fixture-html {
+    height: 200px;
+  }
+}
+
+.test-history {
   >ul {
     margin:0;
 
     >li {
+      list-style:none;
+      clear:both;
       border-top: 1px solid #ccc;
       border-bottom: 0px;
       padding: 3px 0;
+      &.expanded {
+      }
     }
   }
-  .expand-failures {
+  .expand-details {
     &:after {
       content: " >";
     }
@@ -49,22 +67,36 @@ iframe {
       }
     }
   }
-  .failures {
-    background:#f5f5f5;
-    max-height:300px;
-    overflow:auto;
-    border:1px inset;
+  .details {
     margin:10px 0;
-    padding: 5px;
     display:none;
 
     &.show {
       display:block;
     }
-    
-    li {
-      padding-bottom:5px;
+
+    .nav-tabs {
+      .descriptor { 
+        line-height: 36px;
+        padding-right:10px;
+      }
     }
+
+    div.failure {
+      display:none;
+      &.active {
+        display:block;
+      }
+    }
+    
+    ul.failures {
+      margin:0;
+      >li {
+        padding-bottom:5px;
+        list-style:none;
+      }
+    }
+
     dl {
       margin: 0;
       clear:both;

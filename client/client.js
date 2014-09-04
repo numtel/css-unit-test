@@ -17,27 +17,30 @@ var openEditDialog = function () {
   Session.set("showModifyDialog", true);
 };
 
-Template.controls.loggedIn =
-UI.body.loggedIn = function () {
+UI.registerHelper('loggedIn', function () {
   return Meteor.userId() != null;
-};
-
-Template.controls.showModifyDialog = function () {
-  return Session.get("showModifyDialog");
-};
-
-Template.controls.showDeleteDialog = function () {
-  return Session.get("showDeleteDialog");
-};
-
-Template.controls.events({
-  'click a.createNewTest': function () {
-    if(Meteor.userId()){
-      openCreateDialog();
-    };
-  }
 });
 
+UI.registerHelper('showModifyDialog', function () {
+  return Session.get("showModifyDialog");
+});
+
+UI.registerHelper('showDeleteDialog', function () {
+  return Session.get("showDeleteDialog");
+});
+
+UI.registerHelper('createTestDialogOpen', function() {
+  return Session.get('showModifyDialog') && 
+         Session.get('modifyDialogType') === 'create';
+});
+
+UI.registerHelper('testSelected', function(){
+  return Session.get('selected');
+});
+
+UI.registerHelper('loading', function () {
+  return !testCasesHandle.ready();
+});
 
 Template.list.renderSortable = function(){
   setTimeout(function(){
@@ -54,10 +57,13 @@ Template.list.renderSortable = function(){
   }, 10);
 };
 
-Template.list.loading =
-Template.details.loading = function () {
+UI.registerHelper('logThis', function(){
+  console.log(this);
+});
+
+UI.registerHelper('loading', function () {
   return !testCasesHandle.ready();
-};
+});
 Template.list.tests = function(){
   return TestCases.find({}, {sort: {rank: 1}});
 };
@@ -71,20 +77,27 @@ Template.list.active = function () {
 };
 
 var setSelected = function(id){
-  Session.set('selected', id);
-  Session.set('history', undefined);
-  window.history.pushState('','',id);
+  if(id !== Session.get('selected')){
+    Session.set('selected', id);
+    Session.set('history', undefined);
+    Session.set('showModifyDialog', false);
+    window.history.pushState('','',id);
+  };
 };
 
 Template.list.events({
-  'click a': function(event, template){
+  'click a.test': function(event, template){
     var id = event.currentTarget.attributes.getNamedItem('data-id').value;
     setSelected(id);
+    event.preventDefault();
+  },
+  'click a.create': function (event) {
+    openCreateDialog();
     event.preventDefault();
   }
 });
 
-Template.details.test = function(){
+Template.details.test = function(noHistory){
   var test = new TestCases.TestCase(Session.get("selected"));
   if(test.notFound){
     return;
@@ -97,36 +110,45 @@ Template.details.test = function(){
     });
     return arr;
   };
-  test.getHistory(function(error, history){
-    if(history){
-      history = history.reverse();
-      
-      var organizeBySelector = function(arr){
-        var out = {};
-        arr.forEach(function(failure){
-          if(!out.hasOwnProperty(failure['selector'])){
-            out[failure['selector']] = {
-              selector: failure['selector'],
-              instances: []
+  if(!noHistory){
+    test.getHistory(function(error, history){
+      if(history){
+        history = history.reverse();
+        
+        var organizeBySelector = function(arr){
+          var out = {};
+          arr.forEach(function(failure){
+            if(!out.hasOwnProperty(failure['selector'])){
+              out[failure['selector']] = {
+                selector: failure['selector'],
+                instances: []
+              };
             };
-          };
-          out[failure['selector']].instances.push(failure);
+            out[failure['selector']].instances.push(failure);
+          });
+          return objToArray(out);
+        };
+
+
+        history.forEach(function(testStatus){
+          _.each(testStatus.failures, function(elements, width){
+            testStatus.failures[width] = {elements: organizeBySelector(elements),
+                                          width: width,
+                                          runId: testStatus.id};
+          });
+          testStatus.failures = objToArray(testStatus.failures);
         });
-        return objToArray(out);
+        Session.set('history', history);
       };
-
-
-      history.forEach(function(testStatus){
-        _.each(testStatus.failures, function(elements, width){
-          testStatus.failures[width] = {elements: organizeBySelector(elements),
-                                        width: width};
-        });
-        testStatus.failures = objToArray(testStatus.failures);
-      });
-      Session.set('history', history);
-    };
-  });
+    });
+  };
   return test;
+};
+
+Template.details.testVar = function(data){
+  var fieldName = data['hash']['field'],
+      test = Template.details.test();
+  return test[fieldName];
 };
 
 Template.details.history = function(){
@@ -171,13 +193,16 @@ Template.details.events({
   'click button.delete': function(){
     Session.set('showDeleteDialog', true);
   },
-  'click a.expand-failures': function(event){
+  'click a.expand-details': function(event){
     var $el = $(event.currentTarget),
-        failures = $el.parent().children('ul.failures');
-    failures.toggleClass('show');
-    $el.toggleClass('active');
+        details = $el.parent().children('.details');
+    details.toggleClass('show');
+    $el.toggleClass('active').closest('li').toggleClass('expanded');
     event.preventDefault();
-  },
+  }
+});
+
+Template.historyDetails.events({
   'click a.failure-el': function(event){
     var test = new TestCases.TestCase(Session.get('selected')),
         selector = $(event.currentTarget).parent().attr('data-selector'),
@@ -206,17 +231,25 @@ Template.modifyDialog.fieldValue = function(data){
   return this[fieldName];
 };
 
-Template.modifyDialog.test = Template.deleteDialog.test = function(){
-  var id = Session.get("selected");
-  if(id){
-    return new TestCases.TestCase(id);
-  }else{
-    // No test result when nothing selected
-    return {};
+
+Template.modifyDialog.test =
+Template.deleteDialog.test = function(){
+  var test = new TestCases.TestCase(Session.get("selected"));
+  if(test.notFound){
+    return;
   };
+  return test;
 };
 
 Template.modifyDialog.events({
+  'click .duplicate': function(event, template){
+    event.preventDefault();
+    template.find('.title').value = this.title;
+    template.find('.description').value = this.description;
+    template.find('.css-files').value = this.cssFiles;
+    template.find('.fixture-html').value = this.fixtureHTML;
+    template.find('.widths').value = this.widths;
+  },
   'click .save': function (event, template) {
     event.preventDefault();
     var title = template.find(".title").value,

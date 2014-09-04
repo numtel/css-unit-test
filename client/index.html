@@ -4,6 +4,9 @@
 </head>
 
 <body>
+  {{#if showDeleteDialog}}
+    {{> deleteDialog}}
+  {{/if}}
   {{> controls}}
   {{#if loggedIn}}
     <div class="container">
@@ -15,21 +18,12 @@
 </body>
 
 <template name="controls">
-  {{#if showModifyDialog}}
-    {{> modifyDialog}}
-  {{/if}}
-  {{#if showDeleteDialog}}
-    {{> deleteDialog}}
-  {{/if}}
   <div class="navbar navbar-fixed-top">
     <div class="navbar-inner">
       <div class="container">
-        <a class="brand" href="#">SteezTest.me</a>
+        <a class="brand" href="/">SteezTest.me</a>
         <ul class="nav">
           {{#if loggedIn}}
-            <li>
-              <a class="createNewTest" href="#">Create New Test</a>
-            </li>
           {{/if}}
         </ul>
         <ul class="nav pull-right">
@@ -47,15 +41,23 @@
     </div>
   {{else}}
     <div class="well well-small span2">
-      {{#if empty}}
-        <div class="alert">Please click 'Create New Test' to begin.</div>
-      {{/if}}
-      <ul class="nav nav-list" id="tests-list">
-        <li class="nav-header">
-          Test Cases
+      <ul class="nav nav-list">
+        <li class="{{#if createTestDialogOpen}}active{{/if}}">
+          <a href="#" class="create"><i class="icon-plus"></i>Create New Test</a>
         </li>
+        {{#if empty}}
+          <li class="nav-header">
+            No Test Cases
+          </li>
+        {{else}}
+          <li class="nav-header">
+            Test Cases:
+          </li>
+        {{/if}}
+      </ul>
+      <ul class="nav nav-list" id="tests-list">
         {{#each tests}}
-          <li class="{{active}}"><a href="{{_id}}" data-id="{{_id}}">
+          <li class="{{active}}"><a class="test" href="{{_id}}" data-id="{{_id}}">
             {{#if hasNormative}}
               {{#if lastPassed}}
                 <span class="badge badge-success"><i class="icon-ok-circle"></i></span>
@@ -81,116 +83,137 @@
         Loading...
       </div>
     {{else}}
-      {{#if test}}
-        {{#with test}}
-          <h2>{{title}}</h2>
-          <p>{{description}}</p>
-          {{#if hasNormative}}
-          {{else}}
-            <div class="alert">
-              This test needs to have normative styles extracted before it can be run.
-            </div>
-          {{/if}}
-          <div class="btn-group">
+      {{#if showModifyDialog}}
+        {{> modifyDialog}}
+      {{else}}
+        {{#if test}}
+          {{#with test}}
+            <h2>{{title}}</h2>
+            <p>{{description}}</p>
             {{#if hasNormative}}
-              <button class="btn run btn-primary">Run Test</button>
+            {{else}}
+              <div class="alert">
+                This test needs to have normative styles extracted before it can be run.
+              </div>
             {{/if}}
-            <button class="btn extract">Extract Computed Styles as Normative</button>
-            <button class="btn edit">Edit</button>
-            <button class="btn delete">Delete</button>
-          </div>
-          <iframe id="test-frame-{{_id}}"></iframe>
-          {{fillFrame}}
-          {{#if history}}
-            <div class="test-history">
-              <h3>History</h3>
-              <ul>
-                {{#each history}}
-                  <li>
-                  {{#if passed}}
-                    <span class="badge badge-success">
-                      <i class="icon-ok-circle"></i>
-                    </span>
-                    Passed on {{time}}
-                  {{else}}
-                    <span class="badge badge-warning">
-                      <i class="icon-fire"></i>
-                    </span>
-                    <span class="status">Failed on {{time}}</span>
-                    <a class="expand-failures" href="#">Details</a>
-                    {{#each failures}}
-                      <h4>{{width}}</h4>
-                      <ul class="failures">
-                        {{#each elements}}
-                          <li data-selector="{{selector}}" class="clearfix">
-                            <a href="#" class="failure-el" title="Highlight element in preview">
-                              {{selector}}
-                            </a>
-                            {{#each instances}}
-                            <dl>
-                              <dt>Property Name</dt>
-                              <dd class="name">{{key}}</dd>
-                              <dt>Expected Value</dt>
-                              <dd class="expected">{{aVal}}</dd>
-                              <dt>Actual Value</dt>
-                              <dd class="actual">{{bVal}}</dd>
-                            </dl>
-                            {{/each}}
-                          </li>
-                        {{/each}}
-                      </ul>
-                    {{/each}}
-                  {{/if}}
-                  </li>
-                {{/each}}
-              </ul>
+            <div class="btn-group">
+              {{#if hasNormative}}
+                <button class="btn run btn-primary">Run Test</button>
+              {{/if}}
+              <button class="btn extract">Extract Computed Styles as Normative</button>
+              <button class="btn edit">Edit</button>
+              <button class="btn delete">Delete</button>
             </div>
-          {{/if}}
-        {{/with}}
+            <iframe id="test-frame-{{_id}}"></iframe>
+            {{fillFrame}}
+            {{#if history}}
+              <div class="test-history">
+                <h3>History</h3>
+                <ul>
+                  {{#each history}}
+                    <li data-id="{{id}}">
+                    {{#if passed}}
+                      <span class="badge badge-success">
+                        <i class="icon-ok-circle"></i>
+                      </span>
+                      Passed on {{time}}
+                    {{else}}
+                      <span class="badge badge-warning">
+                        <i class="icon-fire"></i>
+                      </span>
+                      <span class="status">Failed on {{time}}</span>
+                      <a class="expand-details" href="#">Details</a>
+                      <div class="details">
+                        <ul class="nav nav-tabs">
+                          <li class="descriptor">Viewport width:</li>
+                          {{#each failures}}
+                            <li>
+                              <a href="#failure-{{runId}}-{{width}}" data-toggle="tab">
+                                {{width}}
+                              </a>
+                            </li>
+                          {{/each}}
+                        </ul>
+                        {{#each failures}}
+                          {{> historyDetails}}
+                        {{/each}}
+                      </div>
+                    {{/if}}
+                    </li>
+                  {{/each}}
+                </ul>
+              </div>
+            {{/if}}
+          {{/with}}
+        {{/if}}
       {{/if}}
     {{/if}}
   </div>
 </template>
 
+<template name="historyDetails">
+  <div class="failure" id="failure-{{runId}}-{{width}}">
+    <ul class="failures">
+      {{#each elements}}
+        <li data-selector="{{selector}}" class="clearfix">
+          <a href="#" class="failure-el" title="Highlight element in preview">
+            {{selector}}
+          </a>
+          {{#each instances}}
+          <dl>
+            <dt>Property Name</dt>
+            <dd class="name">{{key}}</dd>
+            <dt>Expected Value</dt>
+            <dd class="expected">{{aVal}}</dd>
+            <dt>Actual Value</dt>
+            <dd class="actual">{{bVal}}</dd>
+          </dl>
+          {{/each}}
+        </li>
+      {{/each}}
+    </ul>
+  </div>
+</template>
 
 <template name="modifyDialog">
   {{#with test}}
-    <div class="mask"> </div>
-    <div class="modal">
-      <div class="modal-header">
-        <button type="button" class="close cancel">&times;</button>
-        <h3>
-          {{#if isCreate}}
-            Create new test
-          {{else}}
-            Editing '{{title}}'
+    <div class="modify">
+      <h3>
+        {{#if isCreate}}
+          Create new test
+          {{#if testSelected}}
+            <a href="#" class="btn pull-right duplicate">Copy from selected test</a>
           {{/if}}
-        </h3>
-      </div>
-
-      <div class="modal-body">
-        {{#if error}}
-          <div class="alert alert-error">{{error}}</div>
+        {{else}}
+          Editing '{{title}}'
         {{/if}}
+      </h3>
+      {{#if error}}
+        <div class="alert alert-error">{{error}}</div>
+      {{/if}}
 
-        <label>Title</label>
-        <input type="text" class="title span5" value="{{fieldValue key="title"}}">
+      <label>Title</label>
+      <input type="text" class="title span7" value="{{fieldValue key="title"}}">
 
-        <label>Description</label>
-        <textarea class="description span5">{{fieldValue key="description"}}</textarea>
+      <label>Description</label>
+      <textarea class="description span7">{{fieldValue key="description"}}</textarea>
 
-        <label>CSS Files (one HREF per line)</label>
-        <textarea class="css-files span5">{{fieldValue key="cssFiles"}}</textarea>
+      <label>CSS Files</label>
+      <textarea id="css-files-{{_id}}" class="css-files span7">{{fieldValue key="cssFiles"}}</textarea>
+      <span class="help-block">
+        One HREF per line
+      </span>
 
-        <label>Test Resolution Widths</label>
-        <input type="text" class="widths span5" value="{{fieldValue key="widths" default="1024"}}">
+      <label>Test Resolution Widths</label>
+      <input type="text" class="widths span7" value="{{fieldValue key="widths" default="1024"}}">
+      <span class="help-block">
+        Comma separated pixel widths of window to test
+      </span>
 
-        <label>Fixture HTML</label>
-        <textarea class="fixture-html span5">{{fieldValue key="fixtureHTML"}}</textarea>
-      </div>
+      <label>Fixture HTML</label>
+      <textarea id="fixture-html-{{_id}}" class="fixture-html span7">{{fieldValue key="fixtureHTML"}}</textarea>
 
-      <div class="modal-footer">
-        <a href="#" class="btn cancel">Cancel</a>
+      <div class="form-actions">
         <a href="#" class="btn btn-primary save">
           {{#if isCreate}}
             Add test
@@ -198,6 +221,7 @@
             Save Changes
           {{/if}}
         </a>
+        <a href="#" class="btn cancel pull-right">Cancel</a>
       </div>
     </div>
   {{/with}}

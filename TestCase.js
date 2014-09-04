@@ -296,8 +296,6 @@ TestCases.TestCase.prototype.run = function(options, callback){
       if(error){
         throw error;
       };
-      console.log(normative[0].value['1024'][0].attributes);
-      console.log(styles['1024'][0].attributes);
       var failures = {};
       _.each(styles, function(viewStyles, viewWidth){
         if(normative[0].value[viewWidth] === undefined){
@@ -312,7 +310,9 @@ TestCases.TestCase.prototype.run = function(options, callback){
       });
       var report = {time: new Date(), 
                     passed: totalFailures === 0,
+                    id: Random.id(),
                     normative: normative[0]._id,
+                    fixtureHTML: that.fixtureHTML,
                     failures: failures};
       if(that.history !== undefined && that.history.length !== undefined){
         TestCases.update(that._id, {$push: {history: report}});

@@ -14,7 +14,8 @@
  */
 TestCases.TestCase = function(id){
   if(id === undefined){
-    // TODO: Prepare new TestCase
+    this.notFound = true;
+    return;
   }else{
     var data = TestCases.findOne(id);
     if(data === undefined || data.owner !== Meteor.userId()){
@@ -24,10 +25,13 @@ TestCases.TestCase = function(id){
   };
 
   _.extend(this, data);
+
   // Convert widths string into array
-  this.widthsArray = this.widths.split(',').map(function(width){
-    return parseInt(width.trim(), 10);
-  });
+  if(this.widths){
+    this.widthsArray = this.widths.split(',').map(function(width){
+      return parseInt(width.trim(), 10);
+    });
+  };
 };
 
 TestCases.TestCase.prototype.setData = function(data, callback){

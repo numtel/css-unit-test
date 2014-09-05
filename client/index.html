@@ -18,7 +18,7 @@
 </body>
 
 <template name="controls">
-  <div class="navbar navbar-fixed-top">
+  <div class="navbar">
     <div class="navbar-inner">
       <div class="container">
         <a class="brand" href="/">SteezTest.me</a>
@@ -36,14 +36,14 @@
 
 <template name="list">
   {{#if loading}}
-    <div class="loading">
-      Loading...
-    </div>
   {{else}}
-    <div class="well well-small span2">
+    <div class="span3">
       <ul class="nav nav-list">
         <li class="{{#if createTestDialogOpen}}active{{/if}}">
-          <a href="#" class="create"><i class="icon-plus"></i>Create New Test</a>
+          <a href="#" class="create">
+            <span class="badge badge-info"><i class="icon-plus"></i></span>
+            Create New Test
+          </a>
         </li>
         {{#if empty}}
           <li class="nav-header">
@@ -57,18 +57,26 @@
       </ul>
       <ul class="nav nav-list" id="tests-list">
         {{#each tests}}
-          <li class="{{active}}"><a class="test" href="{{_id}}" data-id="{{_id}}">
-            {{#if hasNormative}}
-              {{#if lastPassed}}
-                <span class="badge badge-success"><i class="icon-ok-circle"></i></span>
+          <li class="{{active}}">
+            <a class="test" href="{{_id}}">
+              {{#if hasNormative}}
+                {{#if lastPassed}}
+                  <span class="badge badge-success">
+                    <i class="icon-ok-circle"></i>
+                  </span>
+                {{else}}
+                  <span class="badge badge-warning">
+                    <i class="icon-fire"></i>
+                  </span>
+                {{/if}}
               {{else}}
-                <span class="badge badge-warning"><i class="icon-fire"></i></span>
+                <span class="badge">
+                  <i class="icon-wrench"></i>
+                </span>
               {{/if}}
-            {{else}}
-              <span class="badge badge-info"><i class="icon-wrench"></i></span>
-            {{/if}}
-            {{title}}
-          </a></li>
+              {{title}}
+            </a>
+          </li>
         {{/each}}
       </ul>
       {{renderSortable}}
@@ -77,17 +85,23 @@
 </template>
 
 <template name="details">
-  <div class="span7">
+  <div class="span8">
     {{#if loading}}
-      <div class="loading">
-        Loading...
-      </div>
+      <div class="page-loading"></div>
     {{else}}
-      {{#if showModifyDialog}}
+      {{#if createTestDialogOpen}}
         {{> modifyDialog}}
       {{else}}
         {{#if test}}
           {{#with test}}
+            <div class="test-actions btn-group pull-right">
+              {{#if hasNormative}}
+                <button class="btn run btn-primary">Run Test</button>
+                <button class="btn extract">Set Normative</button>
+              {{else}}
+                <button class="btn extract btn-primary">Set Normative</button>
+              {{/if}}
+            </div>
             <h2>{{title}}</h2>
             <p>{{description}}</p>
             {{#if hasNormative}}
@@ -96,54 +110,80 @@
                 This test needs to have normative styles extracted before it can be run.
               </div>
             {{/if}}
-            <div class="btn-group">
-              {{#if hasNormative}}
-                <button class="btn run btn-primary">Run Test</button>
-              {{/if}}
-              <button class="btn extract">Extract Computed Styles as Normative</button>
-              <button class="btn edit">Edit</button>
-              <button class="btn delete">Delete</button>
+            <ul class="nav nav-tabs">
+              <li class="active">
+                <a href="#test-history-{{_id}}" data-toggle="tab">History</a>
+              </li>
+              <li>
+                <a href="#test-preview-{{_id}}" data-toggle="tab">Preview</a>
+              </li>
+              <li>
+                <a href="#test-modify-{{_id}}" data-toggle="tab">Modify</a>
+              </li>
+            </ul>
+            <div id="test-modify-{{_id}}" class="test-modify test-panel">
+              {{>modifyDialog}}
             </div>
-            <iframe id="test-frame-{{_id}}"></iframe>
-            {{fillFrame}}
-            {{#if history}}
-              <div class="test-history">
-                <h3>History</h3>
-                <ul>
-                  {{#each history}}
-                    <li data-id="{{id}}">
-                    {{#if passed}}
+            <div id="test-preview-{{_id}}" class="test-preview test-panel">
+              <ul class="nav nav-tabs">
+                <li class="descriptor">Viewport width:</li>
+                {{#each widthList}}
+                  <li class="{{#if first}}active{{/if}}">
+                    <a href="#test-frame-{{_id}}-{{width}}" data-toggle="tab">{{width}}</a>
+                  </li>
+                {{/each}}
+              </ul>
+              {{#each widthList}}
+                <iframe 
+                  class="{{#if first}}active{{/if}}" 
+                  width="{{width}}" 
+                  id="test-frame-{{_id}}-{{width}}"></iframe>
+              {{/each}}
+              {{fillFrame}}
+            </div>
+            <div id="test-history-{{_id}}" class="test-history test-panel active">
+              {{#if history}}
+              <ul>
+                {{#each history}}
+                  <li data-id="{{id}}" class="{{#if expanded}}expanded{{/if}}">
+                  {{#if passed}}
+                    <div class="statusbar clearfix">
                       <span class="badge badge-success">
                         <i class="icon-ok-circle"></i>
                       </span>
                       Passed on {{time}}
-                    {{else}}
+                    </div>
+                  {{else}}
+                    <div class="statusbar clearfix">
                       <span class="badge badge-warning">
                         <i class="icon-fire"></i>
                       </span>
                       <span class="status">Failed on {{time}}</span>
                       <a class="expand-details" href="#">Details</a>
-                      <div class="details">
-                        <ul class="nav nav-tabs">
-                          <li class="descriptor">Viewport width:</li>
-                          {{#each failures}}
-                            <li class="{{#if first}}active{{/if}}">
-                              <a href="#failure-{{runId}}-{{width}}" data-toggle="tab">
-                                {{width}}
-                              </a>
-                            </li>
-                          {{/each}}
-                        </ul>
+                    </div>
+                    <div class="details">
+                      <ul class="nav nav-tabs">
+                        <li class="descriptor">Viewport width:</li>
                         {{#each failures}}
-                          {{> historyDetails}}
+                          <li class="{{#if first}}active{{/if}}">
+                            <a href="#failure-{{runId}}-{{width}}" data-toggle="tab">
+                              {{width}}
+                            </a>
+                          </li>
                         {{/each}}
-                      </div>
-                    {{/if}}
-                    </li>
-                  {{/each}}
-                </ul>
-              </div>
-            {{/if}}
+                      </ul>
+                      {{#each failures}}
+                        {{> historyDetails}}
+                      {{/each}}
+                    </div>
+                  {{/if}}
+                  </li>
+                {{/each}}
+              </ul>
+              {{else}}
+                <p>This test has not been run yet.</p>
+              {{/if}}
+            </div>
           {{/with}}
         {{/if}}
       {{/if}}
@@ -166,8 +206,8 @@
         </a>
       </li>
     </ul>
-    <iframe class="active" id="reported-{{runId}}-{{width}}" width="{{width}}"></iframe>
-    <iframe id="expected-{{runId}}-{{width}}" width="{{width}}"></iframe>
+    <iframe class="active" id="reported-{{runId}}-{{width}}"></iframe>
+    <iframe id="expected-{{runId}}-{{width}}"></iframe>
     {{fillFrame}}
     <ul class="failures">
       {{#each elements}}
@@ -192,44 +232,42 @@
 </template>
 
 <template name="modifyDialog">
-  {{#with test}}
-    <div class="modify">
+  <div class="modify">
+    {{#if isCreate}}
       <h3>
-        {{#if isCreate}}
-          Create new test
-          {{#if testSelected}}
-            <a href="#" class="btn pull-right duplicate">Copy from selected test</a>
-          {{/if}}
-        {{else}}
-          Editing '{{title}}'
+        Create new test
+        {{#if testSelected}}
+          <a href="#" class="btn pull-right duplicate">Copy from selected test</a>
         {{/if}}
       </h3>
-      {{#if error}}
-        <div class="alert alert-error">{{error}}</div>
-      {{/if}}
+    {{/if}}
+    {{#if error}}
+      <div class="alert alert-error">{{error}}</div>
+    {{/if}}
 
-      <label>Title</label>
-      <input type="text" class="title span7" value="{{fieldValue key="title"}}">
+    <label>Title</label>
+    <input type="text" class="title span8" value="{{fieldValue key="title"}}">
 
-      <label>Description</label>
-      <textarea class="description span7">{{fieldValue key="description"}}</textarea>
+    <label>Description</label>
+    <textarea class="description span8">{{fieldValue key="description"}}</textarea>
 
-      <label>CSS Files</label>
-      <textarea id="css-files-{{_id}}" class="css-files span7">{{fieldValue key="cssFiles"}}</textarea>
-      <span class="help-block">
-        One HREF per line
-      </span>
+    <label>CSS Files</label>
+    <textarea id="css-files-{{_id}}" class="css-files span8">{{fieldValue key="cssFiles"}}</textarea>
+    <span class="help-block">
+      One HREF per line
+    </span>
 
-      <label>Test Resolution Widths</label>
-      <input type="text" class="widths span7" value="{{fieldValue key="widths" default="1024"}}">
-      <span class="help-block">
-        Comma separated pixel widths of window to test
-      </span>
+    <label>Test Resolution Widths</label>
+    <input type="text" class="widths span8" value="{{fieldValue key="widths" default="1024"}}">
+    <span class="help-block">
+      Comma separated pixel widths of window to test
+    </span>
 
-      <label>Fixture HTML</label>
-      <textarea id="fixture-html-{{_id}}" class="fixture-html span7">{{fieldValue key="fixtureHTML"}}</textarea>
+    <label>Fixture HTML</label>
+    <textarea id="fixture-html-{{_id}}" class="fixture-html span8">{{fieldValue key="fixtureHTML"}}</textarea>
 
-      <div class="form-actions">
+    <div class="form-actions">
+      <div class="save-wrapper">
         <a href="#" class="btn btn-primary save">
           {{#if isCreate}}
             Add test
@@ -237,15 +275,19 @@
             Save Changes
           {{/if}}
         </a>
-        <a href="#" class="btn cancel pull-right">Cancel</a>
       </div>
+      {{#if isCreate}}
+        <a href="#" class="btn cancel pull-right">Cancel</a>
+      {{else}}
+        <a href="#" class="btn delete pull-right">Delete</a>
+      {{/if}}
     </div>
-  {{/with}}
+  </div>
 </template>
 
 <template name="deleteDialog">
   {{#with test}}
-    <div class="mask"> </div>
+    <div class="modal-backdrop"> </div>
     <div class="modal">
       <div class="modal-header">
         <button type="button" class="close cancel">&times;</button>

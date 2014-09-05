@@ -8,10 +8,7 @@ Meteor.publish("TestCases", function () {
   if(this.userId==null){
     return [];
   };
-  return TestCases.find(
-    {owner: this.userId}, 
-    {fields: {history: 0}}
-  );
+  return TestCases.find({owner: this.userId});
 });
 
 var loadTest = function(id){

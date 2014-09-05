@@ -5,17 +5,9 @@ Deps.autorun(function () {
   testCasesHandle = Meteor.subscribe('TestCases');
 });
 
-var openCreateDialog = function () {
-  Session.set("modifyDialogError", null);
-  Session.set("modifyDialogType", 'create');
-  Session.set("showModifyDialog", true);
-};
-
-var openEditDialog = function () {
-  Session.set("modifyDialogError", null);
-  Session.set("modifyDialogType", 'edit');
-  Session.set("showModifyDialog", true);
-};
+UI.registerHelper('logThis', function(){
+  console.log(this);
+});
 
 UI.registerHelper('loggedIn', function () {
   return Meteor.userId() != null;
@@ -57,15 +49,11 @@ Template.list.renderSortable = function(){
   }, 10);
 };
 
-UI.registerHelper('logThis', function(){
-  console.log(this);
-});
-
-UI.registerHelper('loading', function () {
-  return !testCasesHandle.ready();
-});
 Template.list.tests = function(){
-  return TestCases.find({}, {sort: {rank: 1}});
+  return TestCases.find({}, {
+    sort: {rank: 1},
+    fields: {title: 1, hasNormative:1, lastPassed:1}
+  });
 };
 
 Template.list.empty = function(){
@@ -80,106 +68,102 @@ var setSelected = function(id){
   if(id !== Session.get('selected')){
     Session.set('selected', id);
     Session.set('history', undefined);
-    Session.set('showModifyDialog', false);
     window.history.pushState('','',id);
   };
+  Session.set('showModifyDialog', false);
+  Session.set('modifyDialogType', 'edit');
 };
 
 Template.list.events({
   'click a.test': function(event, template){
-    var id = event.currentTarget.attributes.getNamedItem('data-id').value;
-    setSelected(id);
+    setSelected(this._id);
     event.preventDefault();
   },
   'click a.create': function (event) {
-    openCreateDialog();
+    Session.set("modifyDialogError", null);
+    Session.set("modifyDialogType", 'create');
+    Session.set("showModifyDialog", true);
     event.preventDefault();
   }
 });
 
-Template.details.test = function(noHistory){
+Template.details.test = function(){
   var test = new TestCases.TestCase(Session.get("selected"));
   if(test.notFound){
     return;
   };
-  // Tranlate history data structure into one more template friendly
-  var objToArray = function(obj){
-    var arr = [];
-    _.each(obj, function(item){
-      if(arr.length === 0){
-        item['first'] = true;
-      };
-      arr.push(item);
-    });
-    return arr;
-  };
-  if(!noHistory){
-    test.getHistory(function(error, history){
-      if(history){
-        history = history.reverse();
-        
-        var organizeBySelector = function(arr){
-          var out = {};
-          arr.forEach(function(failure){
-            if(!out.hasOwnProperty(failure['selector'])){
-              out[failure['selector']] = {
-                selector: failure['selector'],
-                instances: []
-              };
-            };
-            out[failure['selector']].instances.push(failure);
-          });
-          return objToArray(out);
+  if(test.history){
+    var history = test.history = test.history.reverse();
+    
+    var objToArray = function(obj){
+      var arr = [];
+      _.each(obj, function(item){
+        if(arr.length === 0){
+          item['first'] = true;
         };
+        arr.push(item);
+      });
+      return arr;
+    };
+    var organizeBySelector = function(arr){
+      var out = {};
+      arr.forEach(function(failure){
+        if(!out.hasOwnProperty(failure['selector'])){
+          out[failure['selector']] = {
+            selector: failure['selector'],
+            instances: []
+          };
+        };
+        out[failure['selector']].instances.push(failure);
+      });
+      return objToArray(out);
+    };
 
 
-        history.forEach(function(testStatus){
-          _.each(testStatus.failures, function(elements, width){
-            testStatus.failures[width] = {elements: organizeBySelector(elements),
-                                          width: width,
-                                          runId: testStatus.id};
-            testStatus.failures[width].elements.forEach(function(element){
-              // Propagate values to children
-              ['width', 'runId'].forEach(function(key){
-                element[key] = testStatus.failures[width][key];
-              });
-            });
-          });
-          testStatus.failures = objToArray(testStatus.failures);
-
-          // Remove view widths without failures
-          var activeFailures = [];
-          testStatus.failures.forEach(function(failure){
-            if(failure.elements.length > 0){
-              if(activeFailures.length === 0){
-                failure.first = true;
-              };
-              activeFailures.push(failure);
-            };
-          });
-          testStatus.failures = activeFailures;
-
-          test.loadNormative(testStatus.normative, function(error, result){
-            if(error){
-              throw error;
-            };
-            _.each(testStatus.failures, function(failure){
-              var expected = test.getHTML({
-                fixtureHTML: testStatus.fixtureHTML,
-                normativeValue: result[0].value[failure.width]
-              });
-              Session.set('expected-' + testStatus.id + '-' + failure.width, expected);
-              var reported = test.getHTML({
-                fixtureHTML: testStatus.fixtureHTML,
-                normativeValue: result[0].value[failure.width],
-                diff:  failure.elements
-              });
-              Session.set('reported-' + testStatus.id + '-' + failure.width, reported);
-            });
+    history.forEach(function(testStatus){
+      _.each(testStatus.failures, function(elements, width){
+        testStatus.failures[width] = {elements: organizeBySelector(elements),
+                                      width: width,
+                                      runId: testStatus.id};
+        testStatus.failures[width].elements.forEach(function(element){
+          // Propagate values to children
+          ['width', 'runId'].forEach(function(key){
+            element[key] = testStatus.failures[width][key];
           });
         });
-        Session.set('history', history);
-      };
+      });
+      testStatus.failures = objToArray(testStatus.failures);
+
+      // Remove view widths without failures
+      var activeFailures = [];
+      testStatus.failures.forEach(function(failure){
+        if(failure.elements.length > 0){
+          if(activeFailures.length === 0){
+            failure.first = true;
+          };
+          activeFailures.push(failure);
+        };
+      });
+      testStatus.failures = activeFailures;
+
+      test.loadNormative(testStatus.normative, function(error, result){
+        if(error){
+          throw error;
+        };
+        _.each(testStatus.failures, function(failure){
+          var expected = test.getHTML({
+            fixtureHTML: testStatus.fixtureHTML,
+            normativeValue: result[0].value[failure.width]
+          });
+          Session.set('expected-' + testStatus.id + '-' + failure.width, expected);
+          var reported = test.getHTML({
+            fixtureHTML: testStatus.fixtureHTML,
+            normativeValue: result[0].value[failure.width],
+            diff:  failure.elements
+          });
+          Session.set('reported-' + testStatus.id + '-' + failure.width, reported);
+        });
+      });
     });
   };
   return test;
@@ -191,8 +175,13 @@ Template.details.testVar = function(data){
   return test[fieldName];
 };
 
-Template.details.history = function(){
-  return Session.get('history');
+Template.details.widthList = function(){
+  var test = this;
+  var output = [];
+  this.widthsArray.forEach(function(width){
+    output.push({width:width, _id: test._id, first: output.length === 0});
+  });
+  return output;
 };
 
 Template.details.fillFrame = function(){
@@ -201,12 +190,18 @@ Template.details.fillFrame = function(){
     return;
   };
   setTimeout(function(){
-    var frameId = 'test-frame-' + test._id,
-        frameDoc = document.getElementById(frameId).contentWindow.document;
-    frameDoc.open();
-    frameDoc.write(test.getHTML());
-    frameDoc.close();
+    test.widthsArray.forEach(function(width){
+      var frameId = 'test-frame-' + test._id + '-' + width,
+          frameDoc = document.getElementById(frameId).contentWindow.document;
+      frameDoc.open();
+      frameDoc.write(test.getHTML());
+      frameDoc.close();
+    });
   }, 10);
+};
+
+Template.details.expanded = function(){
+  return Session.get('failure-expanded-'+this.id);
 };
 
 Template.details.events({
@@ -214,7 +209,9 @@ Template.details.events({
     var test = this,
         $el = $(e.currentTarget);
     $el.addClass('disabled');
+    $el.parent().addClass('loading');
     this.run(function(error, result){
+      $el.parent().removeClass('loading');
       $el.removeClass('disabled');
       if(result){
         // Update session array
@@ -224,20 +221,17 @@ Template.details.events({
   },
   'click button.extract': function(e){
     var $el = $(e.currentTarget);
+    $el.parent().addClass('loading');
     $el.addClass('disabled');
     this.setNormative(function(error, result){
+      $el.parent().removeClass('loading');
       $el.removeClass('disabled');
     });
   },
-  'click button.edit': openEditDialog,
-  'click button.delete': function(){
-    Session.set('showDeleteDialog', true);
-  },
   'click a.expand-details': function(event){
-    var $el = $(event.currentTarget),
-        details = $el.parent().children('.details');
-    details.toggleClass('show');
-    $el.toggleClass('active').closest('li').toggleClass('expanded');
+    var key = 'failure-expanded-' + this.id,
+        expanded = Session.get(key);
+    Session.set(key, !expanded);
     event.preventDefault();
   }
 });
@@ -304,14 +298,18 @@ Template.deleteDialog.test = function(){
 Template.modifyDialog.events({
   'click .duplicate': function(event, template){
     event.preventDefault();
-    template.find('.title').value = this.title;
-    template.find('.description').value = this.description;
-    template.find('.css-files').value = this.cssFiles;
-    template.find('.fixture-html').value = this.fixtureHTML;
-    template.find('.widths').value = this.widths;
+    var test = Template.modifyDialog.test();
+    template.find('.title').value = test.title;
+    template.find('.description').value = test.description;
+    template.find('.css-files').value = test.cssFiles;
+    template.find('.fixture-html').value = test.fixtureHTML;
+    template.find('.widths').value = test.widths;
   },
   'click .save': function (event, template) {
     event.preventDefault();
+    var $el = $(event.currentTarget);
+    $el.parent().addClass('loading');
+    $el.addClass('disabled');
     var title = template.find(".title").value,
         description = template.find(".description").value,
         cssFiles = template.find(".css-files").value,
@@ -330,16 +328,21 @@ Template.modifyDialog.events({
 
     if(isCreate){
       Meteor.call('createTest', postData, function(error, result){
+        $el.parent().removeClass('loading');
+        $el.removeClass('disabled');
         if(error){
           Session.set('modifyDialogError', error.reason);
         }else{
           setSelected(result);
           Session.set("showModifyDialog", false);
+          Session.set("modifyDialogType", 'edit');
         };
       });
     }else{
       postData._id = this._id;
       Meteor.call('editTest', postData, function(error, result){
+        $el.parent().removeClass('loading');
+        $el.removeClass('disabled');
         if(error){
           Session.set('modifyDialogError', error.reason);
         }else{
@@ -349,8 +352,14 @@ Template.modifyDialog.events({
     };
   },
 
+  'click .delete': function (event) {
+    Session.set('showDeleteDialog', true);
+    event.preventDefault();
+  },
+
   'click .cancel': function (event) {
     Session.set("showModifyDialog", false);
+    Session.set("modifyDialogType", 'edit');
     event.preventDefault();
   }
 });

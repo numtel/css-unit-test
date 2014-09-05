@@ -1,6 +1,18 @@
+.gradient (@startColor: #eee, @endColor: white) {
+  background-color: @startColor;
+  background: -webkit-gradient(linear, left top, left bottom, from(@startColor), to(@endColor));
+  background: -webkit-linear-gradient(top, @startColor, @endColor);
+  background: -moz-linear-gradient(top, @startColor, @endColor);
+  background: -ms-linear-gradient(top, @startColor, @endColor);
+  background: -o-linear-gradient(top, @startColor, @endColor);
+}
 
 body {
-  padding-top:50px;
+}
+
+.page-loading {
+  background: url(ajax-loader.gif) no-repeat 50% 50%;
+  min-height: 100px;
 }
 
 .navbar .brand {
@@ -15,7 +27,6 @@ body {
 
 iframe {
   display:block;
-  margin-top:10px;
 }
 
 .modify {
@@ -35,6 +46,44 @@ iframe {
   textarea.fixture-html {
     height: 200px;
   }
+  .save-wrapper {
+    padding-right:25px;
+    display:inline-block;
+    &.loading {
+      background:url(ajax-loader-small.gif) no-repeat center right;
+    }
+  }
+}
+
+.nav-tabs {
+  .descriptor { 
+    line-height: 36px;
+    padding-right:10px;
+  }
+}
+
+.test-actions {
+  padding-left: 25px;
+  &.loading {
+    background:url(ajax-loader-small.gif) no-repeat center left;
+  }
+}
+
+
+.test-panel {
+  display:none;
+  &.active {
+    display:block;
+  }
+}
+
+.test-preview {
+  iframe {
+    display:none;
+    &.active {
+      display:block;
+    }
+  }
 }
 
 .test-history {
@@ -44,45 +93,48 @@ iframe {
     >li {
       list-style:none;
       clear:both;
-      border-top: 1px solid #ccc;
-      border-bottom: 0px;
-      padding: 3px 0;
+      border-bottom: 1px solid #eee;
+      .statusbar{
+        padding: 3px 8px;
+      }
       &.expanded {
+        .statusbar {
+          .gradient(#f5f5f5, #ffffff);  
+        }
+        .details {
+          display:block;
+        }
+        .expand-details {
+          &:before {
+            content: "< Collapse ";
+          }
+          &:after {
+            content: "";
+          }
+        }
       }
     }
   }
   .expand-details {
+    float:right;
+
     &:after {
       content: " >";
     }
     &:before {
       content: "Expand ";
     }
-    &.active {
-      &:before {
-        content: "< Collapse ";
-      }
-      &:after {
-        content: "";
-      }
-    }
   }
   .details {
     margin:10px 0;
     display:none;
 
-    &.show {
-      display:block;
-    }
-
-    .nav-tabs {
-      .descriptor { 
-        line-height: 36px;
-        padding-right:10px;
-      }
+    >.nav-tabs{
+      margin-bottom:0;
     }
 
     div.failure {
+      background:#f5f5f5;
       display:none;
       &.active {
         display:block;
@@ -90,10 +142,13 @@ iframe {
       .nav-tabs {
         float:right;
         position:relative;
-        top: -58px;
-        margin-bottom: -58px;
+        top: -38px;
+        margin-bottom: -38px;
       }
       iframe {
+        width: 100%;
+        border:0;
+        background:#fff;
         display:none;
         &.active {
           display:block;
@@ -102,7 +157,7 @@ iframe {
     }
     
     ul.failures {
-      margin:0;
+      margin:10px;
       >li {
         padding-bottom:5px;
         list-style:none;
@@ -117,6 +172,8 @@ iframe {
       float:left;
       width:auto;
       font-family:monospace;
+      font-size:12px;
+      line-height:16px;
 
       &.name {
         font-weight:bold;

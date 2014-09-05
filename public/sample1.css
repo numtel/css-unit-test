@@ -1,10 +1,10 @@
-h1 { color:#903; }
-h2 {color:#00f;}
+h1 { color:#f03; }
+h2 {color:#0cf;}
 h2{text-decoration:underline;}
 h1{border:1px solid #f00; padding-bottom:19px;}
-em{color:#090;}
+em{color:#09c;}
 
 
 @media screen and (max-width: 980px) {
-  h1 {color:#329;}
+  h1 {color:#3c9;}
 }

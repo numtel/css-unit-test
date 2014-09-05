@@ -208,11 +208,9 @@ Template.details.events({
   'click button.run': function(e){
     var test = this,
         $el = $(e.currentTarget);
-    $el.addClass('disabled');
-    $el.parent().addClass('loading');
+    $el.parent().addClass('loading').find('button').addClass('disabled');
     this.run(function(error, result){
-      $el.parent().removeClass('loading');
-      $el.removeClass('disabled');
+      $el.parent().removeClass('loading').find('button').removeClass('disabled');
       if(result){
         // Update session array
         Template.details.test();
@@ -221,11 +219,9 @@ Template.details.events({
   },
   'click button.extract': function(e){
     var $el = $(e.currentTarget);
-    $el.parent().addClass('loading');
-    $el.addClass('disabled');
+    $el.parent().addClass('loading').find('button').addClass('disabled');
     this.setNormative(function(error, result){
-      $el.parent().removeClass('loading');
-      $el.removeClass('disabled');
+      $el.parent().removeClass('loading').find('button').removeClass('disabled');
     });
   },
   'click a.expand-details': function(event){
@@ -305,11 +301,12 @@ Template.modifyDialog.events({
     template.find('.fixture-html').value = test.fixtureHTML;
     template.find('.widths').value = test.widths;
   },
-  'click .save': function (event, template) {
+  'submit form': function (event, template) {
     event.preventDefault();
-    var $el = $(event.currentTarget);
-    $el.parent().addClass('loading');
-    $el.addClass('disabled');
+    var $form = $(event.currentTarget),
+        $save = $form.find('button.save');
+    $save.parent().addClass('loading');
+    $save.addClass('disabled');
     var title = template.find(".title").value,
         description = template.find(".description").value,
         cssFiles = template.find(".css-files").value,
@@ -328,8 +325,8 @@ Template.modifyDialog.events({
 
     if(isCreate){
       Meteor.call('createTest', postData, function(error, result){
-        $el.parent().removeClass('loading');
-        $el.removeClass('disabled');
+        $save.parent().removeClass('loading');
+        $save.removeClass('disabled');
         if(error){
           Session.set('modifyDialogError', error.reason);
         }else{
@@ -341,8 +338,8 @@ Template.modifyDialog.events({
     }else{
       postData._id = this._id;
       Meteor.call('editTest', postData, function(error, result){
-        $el.parent().removeClass('loading');
-        $el.removeClass('disabled');
+        $save.parent().removeClass('loading');
+        $save.removeClass('disabled');
         if(error){
           Session.set('modifyDialogError', error.reason);
         }else{

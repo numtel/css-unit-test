@@ -8,6 +8,11 @@
 }
 
 body {
+  padding-bottom:100px;
+}
+
+h2 {
+  margin-top:0;
 }
 
 .page-loading {
@@ -15,28 +20,49 @@ body {
   min-height: 100px;
 }
 
-.navbar .brand {
-  font-family:Pacifico;
-  font-size:24px;
-  color:#E33330;
+.logged-in-header {
+  background:#67ABE6;
+  margin-bottom:20px;
+  a {
+    color: #fff;
+    &:hover {
+      text-decoration:underline;
+    }
+  }
+  .nav .open>a {
+    background:none;
+  }
 }
 
-#login-buttons {
-  margin-top:10px;
+.brand {
+  font-family:Pacifico;
+  font-size:24px;
+  line-height:48px;
+  color:#fff;
+}
+
+#login-dropdown-list {
+  padding-top:13px;
+  .dropdown-menu {
+    left:auto;
+    right:0;
+  }
 }
 
 iframe {
   display:block;
 }
 
+.nav > li.disabled.nav-header > a {
+  cursor: default;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
 .modify {
   label {
     font-weight:bold;
-  }
-  .help-block {
-    font-size:12px;
-    color:#999;
-    margin-top:-10px;
   }
   textarea.fixture-html,
   textarea.css-files {
@@ -71,6 +97,7 @@ iframe {
 
 
 .test-panel {
+  padding:20px 0 0 0;
   display:none;
   &.active {
     display:block;
@@ -89,13 +116,22 @@ iframe {
 .test-history {
   >ul {
     margin:0;
-
+    padding:0;
     >li {
       list-style:none;
       clear:both;
       border-bottom: 1px solid #eee;
       .statusbar{
-        padding: 3px 8px;
+        padding: 6px 8px;
+        position:relative;
+        .status{
+          display:block;
+        }
+        &.failed {
+          .status {
+            padding-right:120px;
+          }
+        }
       }
       &.expanded {
         .statusbar {
@@ -116,7 +152,14 @@ iframe {
     }
   }
   .expand-details {
-    float:right;
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    text-align:right;
+    line-height:32px;
+    padding-right:10px;
 
     &:after {
       content: " >";
@@ -142,8 +185,8 @@ iframe {
       .nav-tabs {
         float:right;
         position:relative;
-        top: -38px;
-        margin-bottom: -38px;
+        top: -42px;
+        margin-bottom: -41px;
       }
       iframe {
         width: 100%;
@@ -158,6 +201,7 @@ iframe {
     
     ul.failures {
       margin:10px;
+      padding:0;
       >li {
         padding-bottom:5px;
         list-style:none;

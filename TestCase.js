@@ -9,7 +9,6 @@
  * TestCase.loadAllNormatives(function(err, normative[]){})
     - Callback only required on client, sync'd return on server
  * TestCase.run(function(err, report){})
- * TestCase.getHistory(function(err, history){})
  *
  */
 TestCases.TestCase = function(id){
@@ -460,18 +459,3 @@ TestCases.TestCase.prototype.run = function(options, callback){
 };
 
 
-TestCases.TestCase.prototype.getHistory = function(callback){
-  var that = this;
-  if(Meteor.isServer){
-    if(callback){
-      callback.call(that, undefined, this.history);
-    };
-    return this.history;
-  }else if(Meteor.isClient){
-    Meteor.call('getHistory', {id: this._id}, function(error, result){
-      if(callback){
-        callback.call(that, error, result);
-      };
-    });
-  };
-};

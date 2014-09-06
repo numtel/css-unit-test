@@ -43,6 +43,16 @@ Meteor.methods({
     });
     return fut.wait();
   },
+  stylesheetsFromUrl: function(options){
+    var fut = new Future();
+    loadTest(options.id).stylesheetsFromUrl(options.url, function(error, result){
+      if(error){
+        throw error;
+      };
+      fut['return'](result);
+    });
+    return fut.wait();
+  },
   setNormative: function(options){
     return loadTest(options.id).setNormative(options.value);
   },

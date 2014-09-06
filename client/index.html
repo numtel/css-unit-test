@@ -103,7 +103,10 @@
             {{#if hasNormative}}
             {{else}}
               <div class="alert alert-warning">
-                This test needs to have normative styles extracted before it can be run.
+                This test needs to have normative styles extracted before it can be run.<br>
+                <strong>
+                  Please click on 'Set Normative' above when the preview looks as expected.
+                </strong>
               </div>
             {{/if}}
             <ul class="nav nav-tabs">
@@ -263,13 +266,25 @@
     </div>
 
     <div class="form-group">
+      <label for="remote-styles-{{_id}}">Remote Styles</label>
+      <input 
+        id="remote-styles-{{_id}}"
+        type="text" 
+        class="remote-styles form-control" 
+        value="{{fieldValue key="remoteStyles"}}">
+      <span class="help-block">
+        If not blank, the URL provided will be loaded and all of its stylesheets will be used in the test.
+      </span>
+    </div>
+
+    <div class="form-group">
       <label for="css-files-{{_id}}">CSS Files</label>
       <textarea 
         id="css-files-{{_id}}" 
         class="css-files form-control"
         >{{fieldValue key="cssFiles"}}</textarea>
       <span class="help-block">
-        One HREF per line
+        Instead of or in addition to remote stylesheets, place one HREF per line to require stylesheets.
       </span>
     </div>
 
@@ -281,7 +296,7 @@
         class="widths form-control" 
         value="{{fieldValue key="widths" default="1024"}}">
       <span class="help-block">
-        Comma separated pixel window widths to test
+        Please specify a comma separated list of pixel window widths to test.
       </span>
     </div>
 

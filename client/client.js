@@ -151,17 +151,20 @@ Template.details.test = function(){
           throw error;
         };
         _.each(testStatus.failures, function(failure){
-          var expected = test.getHTML({
+          test.getHTML({
             fixtureHTML: testStatus.fixtureHTML,
             normativeValue: result[0].value[failure.width]
+          },function(error, result){
+            Session.set('expected-' + testStatus.id + '-' + failure.width, result);
           });
-          Session.set('expected-' + testStatus.id + '-' + failure.width, expected);
-          var reported = test.getHTML({
+
+          test.getHTML({
             fixtureHTML: testStatus.fixtureHTML,
             normativeValue: result[0].value[failure.width],
             diff:  failure.elements
+          }, function(error, result){
+            Session.set('reported-' + testStatus.id + '-' + failure.width, result);
           });
-          Session.set('reported-' + testStatus.id + '-' + failure.width, reported);
         });
       });
     });
@@ -190,12 +193,14 @@ Template.details.fillFrame = function(){
     return;
   };
   setTimeout(function(){
-    test.widthsArray.forEach(function(width){
-      var frameId = 'test-frame-' + test._id + '-' + width,
-          frameDoc = document.getElementById(frameId).contentWindow.document;
-      frameDoc.open();
-      frameDoc.write(test.getHTML());
-      frameDoc.close();
+    test.getHTML({}, function(error, result){
+      test.widthsArray.forEach(function(width){
+        var frameId = 'test-frame-' + test._id + '-' + width,
+            frameDoc = document.getElementById(frameId).contentWindow.document;
+        frameDoc.open();
+        frameDoc.write(result);
+        frameDoc.close();
+      });
     });
   }, 10);
 };
@@ -297,6 +302,7 @@ Template.modifyDialog.events({
     var test = Template.modifyDialog.test();
     template.find('.title').value = test.title;
     template.find('.description').value = test.description;
+    template.find('.remote-styles').value = test.remoteStyles;
     template.find('.css-files').value = test.cssFiles;
     template.find('.fixture-html').value = test.fixtureHTML;
     template.find('.widths').value = test.widths;
@@ -309,6 +315,7 @@ Template.modifyDialog.events({
     $save.addClass('disabled');
     var title = template.find(".title").value,
         description = template.find(".description").value,
+        remoteStyles = template.find(".remote-styles").value,
         cssFiles = template.find(".css-files").value,
         fixtureHTML = template.find(".fixture-html").value,
         widths = template.find(".widths").value,
@@ -318,6 +325,7 @@ Template.modifyDialog.events({
     var postData = {
       title: title,
       description: description,
+      remoteStyles: remoteStyles,
       cssFiles: cssFiles,
       widths: widths,
       fixtureHTML: fixtureHTML

@@ -1,7 +1,7 @@
 /*
  * TestCase Class
  *
- * TestCase.getHTML()
+ * TestCase.getHTML(options, function(err, result){})
  * TestCase.extractStyles(function(err, value){})
  * TestCase.setNormative(value, function(err, result){})
  * TestCase.loadLatestNormative(function(err, normative[]){})
@@ -38,7 +38,7 @@ TestCases.TestCase.prototype.setData = function(data, callback){
   var that = this;
   if(Meteor.isServer){
     // Require new normative if these fields change
-    ['cssFiles', 'widths', 'fixtureHTML'].forEach(function(field){
+    ['cssFiles', 'widths', 'fixtureHTML', 'remoteStyles'].forEach(function(field){
       if(data[field] !== undefined && data[field] !== that[field]){
         data.hasNormative = false;
       };
@@ -62,60 +62,123 @@ TestCases.TestCase.prototype.setData = function(data, callback){
   };
 };
 
-TestCases.TestCase.prototype.getHTML = function(options){
+var stylesheetFromNormative = function(normative, diff){
+  var elements = flattenArray(normative),
+      style = ['<style>'];
+  elements.forEach(function(element){
+    if(diff){
+      diff.forEach(function(diffItem){
+        if(diffItem.selector === element.selector){
+          diffItem.instances.forEach(function(instance){
+            element.attributes[instance.key] = instance.bVal;
+          });
+        };
+      });
+    };
+    var rule = element.selector + '{';
+    _.each(element.attributes, function(val, key){
+      rule += key + ': ' + val + '; ';
+    });
+    rule += '}';
+    style.push(rule);
+  });
+  style.push('</style>');
+  return style.join('\n');
+};
+
+TestCases.TestCase.prototype.stylesheetsFromUrl = function(url, callback){
+  var that = this;
+  if(Meteor.isServer){
+    var phantomjs = Npm.require('phantomjs');
+    var shell = Npm.require('child_process');
+    command = shell.spawn(phantomjs.path, 
+      ['assets/app/phantom/getSheetsFromUrl.js', url]);
+    var stdout = '', stderr = '';
+
+    command.stdout.on('data', function(data){
+      stdout += data;
+    });
+
+    command.stderr.on('data', function(data){
+      stderr += data;
+    });
+
+    command.on('exit', function(code) {
+      if(callback){
+        callback.call(that, stderr.length > 0 ? stderr : undefined, 
+                            stdout.length > 0 ? stdout : undefined);
+      };
+    });
+  }else if(Meteor.isClient){
+    Meteor.call('stylesheetsFromUrl', {id: that._id, url: url}, function(error, result){
+      if(callback){
+        callback.call(that, error, result);
+      };
+    });
+  };
+};
+
+TestCases.TestCase.prototype.getHTML = function(options, callback){
+  var that = this;
   options = _.defaults(options || {}, {
     fixtureHTML: this.fixtureHTML,
     normativeValue: undefined,
     diff: undefined
   });
 
-  var head;
-  if(options.normativeValue === undefined){
-    // Use spec'd css
-    var linkTags = [];
-    this.cssFiles.split('\n').forEach(function(href){
-      linkTags.push('<link href="' + href + '?' + Date.now() + '" ' +
-                    'type="text/css" rel="stylesheet" />');
-    });
-    head = linkTags.join('\n');
-  }else{
-    // Styles are coming from expectations
-    var elements = flattenArray(options.normativeValue),
-        style = ['<style>'];
-    elements.forEach(function(element){
-      if(options.diff){
-        options.diff.forEach(function(diffItem){
-          if(diffItem.selector === element.selector){
-            diffItem.instances.forEach(function(instance){
-              element.attributes[instance.key] = instance.bVal;
-            });
-          };
-        });
+  var head = '';
+  // Split out post-async code
+  var finishOutput = function(head){
+    if(options.normativeValue === undefined){
+      if(head === undefined){
+        head = '';
       };
-      var rule = element.selector + '{';
-      _.each(element.attributes, function(val, key){
-        rule += key + ': ' + val + '; ';
+      // Use spec'd css
+      var linkTags = [];
+      that.cssFiles.split('\n').forEach(function(href){
+        linkTags.push('<link href="' + href + '?' + Date.now() + '" ' +
+                      'type="text/css" rel="stylesheet" />');
       });
-      rule += '}';
-      style.push(rule);
-    });
-    style.push('</style>');
-    head = style.join('\n');
+      head += linkTags.join('\n');
+    }else{
+      // Styles are coming from expectations
+      head = stylesheetFromNormative(options.normativeValue, options.diff);
+    };
+    var frameId = 'test-frame-' + that._id,
+        frameHTML = [
+         '<html>',
+         '<head>',
+         head,
+         '<style>',
+         '.steez-highlight-failure { outline: 2px solid #ff0 !important; }',
+         '</style>',
+         '</head>',
+         '<body>',
+         options.fixtureHTML,
+         '</body>',
+         '</html>'].join('\n');
+    if(callback){
+      callback.call(that, undefined, frameHTML);
+    };
+    return frameHTML;
   };
-  var frameId = 'test-frame-' + this._id,
-      frameHTML = [
-       '<html>',
-       '<head>',
-       head,
-       '<style>',
-       '.steez-highlight-failure { outline: 2px solid #ff0 !important; }',
-       '</style>',
-       '</head>',
-       '<body>',
-       options.fixtureHTML,
-       '</body>',
-       '</html>'].join('\n');
-  return frameHTML;
+  // Begin possible async
+  if(options.normativeValue === undefined){
+    // Grab stylesheets from remote url
+    if(this.remoteStyles){
+      head = this.stylesheetsFromUrl(this.remoteStyles, function(error, result){
+        if(error){
+          throw error;
+        }else{
+          finishOutput(result);
+        };
+      });
+    }else{
+      finishOutput();
+    };
+  }else{
+    finishOutput();
+  };
 };
 
 TestCases.TestCase.prototype.extractStyles = function(callback){
@@ -125,49 +188,51 @@ TestCases.TestCase.prototype.extractStyles = function(callback){
     var shell = Npm.require('child_process');
     var fs = Npm.require('fs');
     var htmlFile = 'test-' + this._id + '.html';
-    fs.writeFile(htmlFile, this.getHTML(), function(err) {
-      if(err){
-        console.log(err);
-      }else{
-        var returned = {}, returnCount = 0;
-        var phantomReturn = function(width, styles){
-          returned[width] = styles;
-          returnCount++;
-          if(returnCount === that.widthsArray.length){
-            // Delete html file
-            fs.unlink(htmlFile);
-            if(callback){
-              callback.call(that, undefined, returned);
+    this.getHTML({}, function(error, result){
+      fs.writeFile(htmlFile, result, function(err) {
+        if(err){
+          console.log(err);
+        }else{
+          var returned = {}, returnCount = 0;
+          var phantomReturn = function(width, styles){
+            returned[width] = styles;
+            returnCount++;
+            if(returnCount === that.widthsArray.length){
+              // Delete html file
+              fs.unlink(htmlFile);
+              if(callback){
+                callback.call(that, undefined, returned);
+              };
             };
           };
+          that.widthsArray.forEach(function(testWidth){
+            command = shell.spawn(phantomjs.path, 
+              ['assets/app/phantom/extractStyles.js', htmlFile, testWidth]);
+
+
+            command.stdout.on('data', function(data){
+              console.log('PhantomJS stdout: ' + data);
+            });
+
+            command.stderr.on('data', function(data){
+              console.log('PhantomJS stderr: ' + data);
+            });
+
+            command.on('exit', function(code) {
+              if(code === 0){
+                var outFile = htmlFile.replace('.html', '-' + testWidth + '.out'),
+                    outContents = fs.readFileSync(outFile),
+                    styles = JSON.parse(outContents);
+                phantomReturn(testWidth, styles);
+                // Delete output file
+                fs.unlink(outFile);
+              }else{
+                throw 'PhantomJS Error ' + code;
+              };
+            });
+          });
         };
-        that.widthsArray.forEach(function(testWidth){
-          command = shell.spawn(phantomjs.path, 
-            ['assets/app/phantomDriver.js', htmlFile, testWidth]);
-
-
-          command.stdout.on('data', function(data){
-            console.log('PhantomJS stdout: ' + data);
-          });
-
-          command.stderr.on('data', function(data){
-            console.log('PhantomJS stderr: ' + data);
-          });
-
-          command.on('exit', function(code) {
-            if(code === 0){
-              var outFile = htmlFile.replace('.html', '-' + testWidth + '.out'),
-                  outContents = fs.readFileSync(outFile),
-                  styles = JSON.parse(outContents);
-              phantomReturn(testWidth, styles);
-              // Delete output file
-              fs.unlink(outFile);
-            }else{
-              throw 'PhantomJS Error ' + code;
-            };
-          });
-        });
-      };
+      });
     });
   }else if(Meteor.isClient){
     Meteor.call('extractStyles', {id: this._id}, function(error, result){
@@ -221,7 +286,6 @@ TestCases.TestCase.prototype.setNormative = function(value, callback){
     Meteor.call('setNormative', {id: this._id, value: value}, function(error, result){
       if(error){
         console.log('setNormative Failed!', error, result);
-        return;
       };
       if(callback){
         callback.call(that, error, result);

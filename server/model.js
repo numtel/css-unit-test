@@ -41,6 +41,7 @@ var validatePost = function(data, isCreate){
   var fieldDefs = {
     title: ['Title', 'string', {min: 1, max: 100}],
     description: ['Description', 'string', {min: 1, max: 1000}],
+    remoteStyles: ['Remote Styles', 'string', {min:0, max:1000}],
     cssFiles: ['CSS Files', 'string', {min: 1, max: 10000}],
     fixtureHTML: ['Fixture HTML', 'string', {min: 1, max: 100000}],
     widths: ['Test Resolution Widths', 'integerList', {}],
@@ -85,6 +86,7 @@ Meteor.methods({
       owner: this.userId,
       title: options.title,
       description: options.description,
+      remoteStyles: options.remoteStyles,
       cssFiles: options.cssFiles,
       widths: options.widths,
       fixtureHTML: options.fixtureHTML
@@ -102,6 +104,7 @@ Meteor.methods({
     var data = {
       title: options.title,
       description: options.description,
+      remoteStyles: options.remoteStyles,
       cssFiles: options.cssFiles,
       widths: options.widths,
       fixtureHTML: options.fixtureHTML,

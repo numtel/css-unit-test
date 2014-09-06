@@ -1,0 +1,51 @@
+<template name="list">
+  {{#if loading}}
+  {{else}}
+    <div class="col-md-3">
+      <ul class="nav nav-pills nav-stacked">
+        <li class="{{#if createTestDialogOpen}}active{{/if}}">
+          <a href="#" class="create">
+            <span class="badge badge-info pull-right">
+              <i class="glyphicon glyphicon-plus"></i>
+            </span>
+            Create New Test
+          </a>
+        </li>
+        {{#if empty}}
+          <li class="disabled nav-header">
+            <a>No Test Cases</a>
+          </li>
+        {{else}}
+          <li class="disabled nav-header">
+            <a>Test Cases:</a>
+          </li>
+        {{/if}}
+      </ul>
+      <ul class="nav nav-pills nav-stacked" id="tests-list">
+        {{#each tests}}
+          <li class="{{active}}">
+            <a class="test" href="{{_id}}" data-id="{{_id}}">
+              {{#if hasNormative}}
+                {{#if lastPassed}}
+                  <span class="badge alert-success pull-right">
+                    <i class="glyphicon glyphicon-ok-circle"></i>
+                  </span>
+                {{else}}
+                  <span class="badge alert-warning pull-right">
+                    <i class="glyphicon glyphicon-fire"></i>
+                  </span>
+                {{/if}}
+              {{else}}
+                <span class="badge pull-right">
+                  <i class="glyphicon glyphicon-wrench"></i>
+                </span>
+              {{/if}}
+              {{title}}
+            </a>
+          </li>
+        {{/each}}
+      </ul>
+      {{renderSortable}}
+    </div>
+  {{/if}}
+</template>

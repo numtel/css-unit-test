@@ -52,7 +52,6 @@ TestCases.TestCase.prototype.setData = function(data, callback){
     Meteor.call('setData', {id: this._id, data: data}, function(error, result){
       if(error){
         console.log('setData Failed!', error, result);
-        return;
       };
       if(callback){
         callback.call(that, error, result);
@@ -173,10 +172,10 @@ TestCases.TestCase.prototype.getHTML = function(options, callback){
         };
       });
     }else{
-      finishOutput();
+      return finishOutput();
     };
   }else{
-    finishOutput();
+    return finishOutput();
   };
 };
 

@@ -1,0 +1,153 @@
+<template name="details">
+  <div class="col-md-9">
+    {{#if loading}}
+      <div class="page-loading"></div>
+    {{else}}
+      {{#if createTestDialogOpen}}
+        {{> modifyDialog}}
+      {{else}}
+        {{#if test}}
+          {{#with test}}
+            <div class="test-actions btn-group pull-right">
+              {{#if hasNormative}}
+                <button class="btn run btn-primary">Run Test</button>
+                <button class="btn btn-default extract">Set Normative</button>
+              {{else}}
+                <button class="btn extract btn-primary">Set Normative</button>
+              {{/if}}
+            </div>
+            <h2>{{title}}</h2>
+            <p>{{description}}</p>
+            {{#if hasNormative}}
+            {{else}}
+              <div class="alert alert-warning">
+                This test needs to have normative styles extracted before it can be run.<br>
+                <strong>
+                  Please click on 'Set Normative' above when the preview looks as expected.
+                </strong>
+              </div>
+            {{/if}}
+            <ul class="nav nav-tabs">
+              <li class="active">
+                <a href="#test-history-{{_id}}" data-toggle="tab">History</a>
+              </li>
+              <li>
+                <a href="#test-preview-{{_id}}" data-toggle="tab">Preview</a>
+              </li>
+              <li>
+                <a href="#test-modify-{{_id}}" data-toggle="tab">Modify</a>
+              </li>
+            </ul>
+            <div id="test-modify-{{_id}}" class="test-modify test-panel">
+              {{>modifyDialog}}
+            </div>
+            <div id="test-preview-{{_id}}" class="test-preview test-panel">
+              <ul class="nav nav-tabs">
+                <li class="descriptor">Viewport width:</li>
+                {{#each widthList}}
+                  <li class="{{#if first}}active{{/if}}">
+                    <a href="#test-frame-{{_id}}-{{width}}" data-toggle="tab">{{width}}</a>
+                  </li>
+                {{/each}}
+              </ul>
+              {{#each widthList}}
+                <iframe 
+                  class="{{#if first}}active{{/if}}" 
+                  width="{{width}}" 
+                  id="test-frame-{{_id}}-{{width}}"></iframe>
+              {{/each}}
+              {{fillFrame}}
+            </div>
+            <div id="test-history-{{_id}}" class="test-history test-panel active">
+              {{#if history}}
+              <ul>
+                {{#each history}}
+                  <li data-id="{{id}}" class="{{#if expanded}}expanded{{/if}}">
+                  {{#if passed}}
+                    <div class="statusbar clearfix passed">
+                      <span class="status">
+                        <span class="badge alert-success">
+                          <i class="glyphicon glyphicon-ok-circle"></i>
+                        </span>
+                        Passed on {{time}}
+                      </span>
+                    </div>
+                  {{else}}
+                    <div class="statusbar clearfix failed">
+                      <span class="status">
+                        <span class="badge alert-warning">
+                          <i class="glyphicon glyphicon-fire"></i>
+                        </span>
+                        Failed on {{time}}
+                      </span>
+                      <a class="expand-details" href="#">Details</a>
+                    </div>
+                    <div class="details">
+                      <ul class="nav nav-tabs">
+                        <li class="descriptor">Viewport width:</li>
+                        {{#each failures}}
+                          <li class="{{#if first}}active{{/if}}">
+                            <a href="#failure-{{runId}}-{{width}}" data-toggle="tab">
+                              {{width}}
+                            </a>
+                          </li>
+                        {{/each}}
+                      </ul>
+                      {{#each failures}}
+                        {{> historyDetails}}
+                      {{/each}}
+                    </div>
+                  {{/if}}
+                  </li>
+                {{/each}}
+              </ul>
+              {{else}}
+                <p class="text-muted"><em>This test has not been run yet.</em></p>
+              {{/if}}
+            </div>
+          {{/with}}
+        {{/if}}
+      {{/if}}
+    {{/if}}
+  </div>
+</template>
+
+<template name="historyDetails">
+  <div class="failure {{#if first}}active{{/if}}" id="failure-{{runId}}-{{width}}">
+    <ul class="nav nav-tabs">
+      <li class="descriptor">Preview:</li>
+      <li class="active">
+        <a href="#reported-{{runId}}-{{width}}" data-toggle="tab">
+          Reported
+        </a>
+      </li>
+      <li class="">
+        <a href="#expected-{{runId}}-{{width}}" data-toggle="tab">
+          Expected
+        </a>
+      </li>
+    </ul>
+    <iframe class="active" id="reported-{{runId}}-{{width}}"></iframe>
+    <iframe id="expected-{{runId}}-{{width}}"></iframe>
+    {{fillFrame}}
+    <ul class="failures">
+      {{#each elements}}
+        <li data-selector="{{selector}}" class="clearfix">
+          <a href="#" class="failure-el" title="Highlight element in preview">
+            {{selector}}
+          </a>
+          {{#each instances}}
+          <dl>
+            <dt>Property Name</dt>
+            <dd class="name">{{key}}</dd>
+            <dt>Expected Value</dt>
+            <dd class="expected">{{aVal}}</dd>
+            <dt>Actual Value</dt>
+            <dd class="actual">{{bVal}}</dd>
+          </dl>
+          {{/each}}
+        </li>
+      {{/each}}
+    </ul>
+  </div>
+</template>

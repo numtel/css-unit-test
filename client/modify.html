@@ -1,0 +1,81 @@
+<template name="modifyDialog">
+  <form class="modify">
+    {{#if isCreate}}
+      <h2>
+        Create New Test
+        {{#if testSelected}}
+          <a href="#" class="btn btn-default pull-right duplicate">Copy Selected Test</a>
+        {{/if}}
+      </h2>
+    {{/if}}
+    {{#if error}}
+      <div class="alert alert-danger">{{error}}</div>
+    {{/if}}
+
+
+    {{#each fields}}
+      <div class="form-group">
+        <label for="{{key}}-{{testId}}">{{label}}</label>
+        {{#if text}}
+          <input 
+            id="{{key}}-{{testId}}" 
+            type="text" 
+            class="{{key}} form-control" 
+            value="{{fieldValue}}">
+        {{/if}}
+        {{#if textarea}}
+          <textarea 
+            id="{{key}}-{{testId}}" 
+            class="{{key}} form-control"
+            >{{fieldValue}}</textarea>
+        {{/if}}
+        {{#if help}}
+          <span class="help-block">{{{help}}}</span>
+        {{/if}}
+      </div>
+    {{/each}}
+
+    <div class="form-actions">
+      <div class="save-wrapper">
+        <button type="submit" class="btn btn-primary save">
+          {{#if isCreate}}
+            Create Test
+          {{else}}
+            Save Changes
+          {{/if}}
+        </button>
+      </div>
+      {{#if isCreate}}
+        <a href="#" class="btn btn-default cancel pull-right">Cancel</a>
+      {{else}}
+        <a href="#" class="btn btn-default delete pull-right">Delete</a>
+      {{/if}}
+    </div>
+  </form>
+</template>
+
+<template name="deleteDialog">
+  {{#with test}}
+    <div class="modal-backdrop"></div>
+    <div class="modal" style="display:block;">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close cancel">&times;</button>
+            <h4 class="modal-title">Delete '{{title}}'?</h4>
+          </div>
+
+          <div class="modal-body">
+            Clicking 'Delete' will permanently remove all traces of this test.
+          </div>
+
+          <div class="modal-footer">
+            <a href="#" class="btn btn-default cancel">Cancel</a>
+            <a href="#" class="btn btn-danger delete">Delete</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  {{/with}}
+</template>
+

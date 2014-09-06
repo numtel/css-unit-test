@@ -208,17 +208,20 @@ TestCases.TestCase.prototype.extractStyles = function(callback){
               };
             };
           };
+          var cmdOutput = '', commands = [];
           that.widthsArray.forEach(function(testWidth){
             command = shell.spawn(phantomjs.path, 
               ['assets/app/phantom/extractStyles.js', htmlFile, testWidth]);
+            commands.push(command);
 
-
-            command.stdout.on('data', function(data){
-              console.log('PhantomJS stdout: ' + data);
-            });
-
-            command.stderr.on('data', function(data){
-              console.log('PhantomJS stderr: ' + data);
+            ['stdout', 'stderr'].forEach(function(outVar){
+              command[outVar].on('data', function(data){
+                console.log('PhantomJS ' + outVar + ': ' + data);
+                cmdOutput += data;
+                commands.forEach(function(cmd){
+                  cmd.kill('SIGKILL');
+                });
+              });
             });
 
             command.on('exit', function(code) {
@@ -230,7 +233,10 @@ TestCases.TestCase.prototype.extractStyles = function(callback){
                 // Delete output file
                 fs.unlink(outFile);
               }else{
-                throw 'PhantomJS Error ' + code;
+                if(callback){
+                  callback.call(that, cmdOutput, undefined);
+                  callback = undefined;
+                };
               };
             });
           });
@@ -239,12 +245,14 @@ TestCases.TestCase.prototype.extractStyles = function(callback){
     });
   }else if(Meteor.isClient){
     Meteor.call('extractStyles', {id: this._id}, function(error, result){
-      if(error){
-        console.log('extractStyles Failed!', error, result);
-        return;
-      };
-      if(callback){
-        callback.call(that, error, result);
+      if(typeof result === 'string' && result.substr(0,9) === '##error##'){
+        if(callback){
+          callback.call(that, result.substr(9), undefined);
+        };
+      }else{
+        if(callback){
+          callback.call(that, undefined, result);
+        };
       };
     });
   };
@@ -264,7 +272,8 @@ TestCases.TestCase.prototype.setNormative = function(value, callback){
       var fut = new Future();
       this.extractStyles(Meteor.bindEnvironment(function(error, result){
         if(error){
-          throw error;
+          fut['return']('##error##' + error);
+          return;
         };
         fut['return'](that.setNormative(result, callback));
       }));
@@ -287,11 +296,14 @@ TestCases.TestCase.prototype.setNormative = function(value, callback){
     return id;
   }else if(Meteor.isClient){
     Meteor.call('setNormative', {id: this._id, value: value}, function(error, result){
-      if(error){
-        console.log('setNormative Failed!', error, result);
-      };
-      if(callback){
-        callback.call(that, error, result);
+      if(typeof result === 'string' && result.substr(0,9) === '##error##'){
+        if(callback){
+          callback.call(that, result.substr(9), undefined);
+        };
+      }else{
+        if(callback){
+          callback.call(that, undefined, result);
+        };
       };
     });
   };
@@ -414,19 +426,35 @@ TestCases.TestCase.prototype.run = function(options, callback){
 
     var normative = this.loadLatestNormative();
     if(normative.length === 0){
-      throw 'No normative exists!';
+      if(callback){
+        callback.call(that, 'No normative exists!', undefined);
+      };
+      return;
     };
 
     this.extractStyles(Meteor.bindEnvironment(function(error, styles){
       if(error){
-        throw error;
+        if(callback){
+          callback.call(that, error, undefined);
+        };
+        return;
       };
       var failures = {};
       _.each(styles, function(viewStyles, viewWidth){
         if(normative[0].value[viewWidth] === undefined){
-          throw 'Normative widths mismatch!';
+          if(callback){
+            callback.call(that, 'Normative widths mismatch!', undefined);
+          };
+          return;
         };
-        failures[viewWidth] = compareStyles(normative[0].value[viewWidth], viewStyles);
+        try{
+          failures[viewWidth] = compareStyles(normative[0].value[viewWidth], viewStyles);
+        }catch(error){
+          if(callback){
+            callback.call(that, error, undefined);
+          };
+          return;
+        };
       });
       
       var totalFailures = 0;
@@ -451,12 +479,14 @@ TestCases.TestCase.prototype.run = function(options, callback){
     }));
   }else if(Meteor.isClient){
     Meteor.call('run', {id: this._id, options: options}, function(error, result){
-      if(error){
-        console.log('Run Failed!', error, result);
-        console.log(error.get_stack());
-      };
-      if(callback){
-        callback.call(that, error, result);
+      if(typeof result === 'string' && result.substr(0,9) === '##ERROR##'){
+        if(callback){
+          callback.call(that, result.substr(9), undefined);
+        };
+      }else{
+        if(callback){
+          callback.call(that, undefined, result);
+        };
       };
     });
   };

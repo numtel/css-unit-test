@@ -120,6 +120,10 @@ Template.details.expanded = function(){
   return Session.get('failure-expanded-'+this.id);
 };
 
+Template.details.runError = function(){
+  return Session.get('run-error-'+this._id);
+};
+
 Template.details.events({
   'click button.run': function(e){
     var test = this,
@@ -127,17 +131,16 @@ Template.details.events({
     $el.parent().addClass('loading').find('button').addClass('disabled');
     this.run(function(error, result){
       $el.parent().removeClass('loading').find('button').removeClass('disabled');
-      if(result){
-        // Update session array
-        Template.details.test();
-      };
+      Session.set('run-error-' + test._id, error);
     });
   },
   'click button.extract': function(e){
-    var $el = $(e.currentTarget);
+    var test = this,
+        $el = $(e.currentTarget);
     $el.parent().addClass('loading').find('button').addClass('disabled');
     this.setNormative(function(error, result){
       $el.parent().removeClass('loading').find('button').removeClass('disabled');
+      Session.set('run-error-' + test._id, error);
     });
   },
   'click a.expand-details': function(event){

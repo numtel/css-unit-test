@@ -109,7 +109,8 @@ Meteor.methods({
     var fut = new Future();
     loadTest(options.id).extractStyles(function(error, result){
       if(error){
-        throw error;
+        fut['return']('##ERROR##' + error);
+        return;
       };
       fut['return'](result);
     });
@@ -141,7 +142,8 @@ Meteor.methods({
     var fut = new Future();
     loadTest(options.id).run(options.options, function(error, result){
       if(error){
-        throw error;
+        fut['return']('##ERROR##' + error);
+        return;
       };
       fut['return'](result);
     });

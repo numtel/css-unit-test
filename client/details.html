@@ -27,6 +27,12 @@
                 </strong>
               </div>
             {{/if}}
+            {{#if runError}}
+              <div class="alert alert-danger">
+                <strong>Error While Running Test:</strong>
+                {{runError}}
+              </div>
+            {{/if}}
             <ul class="nav nav-tabs">
               <li class="active">
                 <a href="#test-history-{{_id}}" data-toggle="tab">History</a>

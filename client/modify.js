@@ -22,7 +22,17 @@ Template.modifyDialog.fields = function(){
     {key: 'fixtureHTML',
      label: 'Fixture HTML',
      textarea: true,
-     help: 'Only include content tags that would exist inside a <code>&lt;body&gt;</code> tag.'}
+     help: 'Only include content tags that would exist inside a <code>&lt;body&gt;</code> tag.'},
+    {key: 'htmlClass',
+     label: 'HTML Tag Class',
+     text: true,
+     default: '',
+     help: 'If required, specify a class to place on the <code>&lt;html&gt;</code> tag.'},
+    {key: 'bodyClass',
+     label: 'BODY Tag Class',
+     text: true,
+     default: '',
+     help: 'If required, specify a class to place on the <code>&lt;body&gt;</code> tag.'}
   ];
 };
 

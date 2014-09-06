@@ -9,6 +9,8 @@ var fieldDefs = {
   cssFiles: ['CSS Files', 'string', {min: 1, max: 10000}],
   fixtureHTML: ['Fixture HTML', 'string', {min: 1, max: 100000}],
   widths: ['Test Resolution Widths', 'integerList', {}],
+  htmlClass: ['HTML Tag Class', 'string', {min: 1, max: 1000}],
+  bodyClass: ['BODY Tag Class', 'string', {min: 1, max: 1000}],
 };
 
 TestCases.allow({

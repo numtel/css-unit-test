@@ -1,5 +1,5 @@
 /*
- * TestCase Class
+ * TestCase Class - same interface client and server
  *
  * TestCase.getHTML(options, function(err, result){})
  * TestCase.extractStyles(function(err, value){})
@@ -37,7 +37,12 @@ TestCases.TestCase.prototype.setData = function(data, callback){
   var that = this;
   if(Meteor.isServer){
     // Require new normative if these fields change
-    ['cssFiles', 'widths', 'fixtureHTML', 'remoteStyles'].forEach(function(field){
+    ['cssFiles', 
+     'widths', 
+     'fixtureHTML', 
+     'remoteStyles', 
+     'htmlClass', 
+     'bodyClass'].forEach(function(field){
       if(data[field] !== undefined && data[field] !== that[field]){
         data.hasNormative = false;
       };
@@ -144,14 +149,14 @@ TestCases.TestCase.prototype.getHTML = function(options, callback){
     };
     var frameId = 'test-frame-' + that._id,
         frameHTML = [
-         '<html>',
+         '<html' + (that.htmlClass ? ' class="' + that.htmlClass + '"' : '') + '>',
          '<head>',
          head,
          '<style>',
          '.steez-highlight-failure { outline: 2px solid #ff0 !important; }',
          '</style>',
          '</head>',
-         '<body>',
+         '<body' + (that.bodyClass ? ' class="' + that.bodyClass + '"' : '') + '>',
          options.fixtureHTML,
          '</body>',
          '</html>'].join('\n');

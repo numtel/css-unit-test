@@ -1,4 +1,4 @@
-body{ background-color:#eef; }
+body{ background-color:#cef; }
 
 h1 { color:#f03; }
 h2 {color:#0cf;}
@@ -9,5 +9,6 @@ em{color:#09c;}
 
 @media screen and (max-width: 980px) {
   h1 {color:#3c9;}
+  .banana { color:#ff0; }
   html {border:4px solid #f00; }
 }

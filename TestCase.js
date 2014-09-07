@@ -40,9 +40,7 @@ TestCases.TestCase.prototype.setData = function(data, callback){
     ['cssFiles', 
      'widths', 
      'fixtureHTML', 
-     'remoteStyles', 
-     'htmlClass', 
-     'bodyClass'].forEach(function(field){
+     'remoteStyles'].forEach(function(field){
       if(data[field] !== undefined && data[field] !== that[field]){
         data.hasNormative = false;
       };
@@ -147,19 +145,26 @@ TestCases.TestCase.prototype.getHTML = function(options, callback){
       // Styles are coming from expectations
       head = stylesheetFromNormative(options.normativeValue, options.diff);
     };
-    var frameId = 'test-frame-' + that._id,
-        frameHTML = [
-         '<html' + (that.htmlClass ? ' class="' + that.htmlClass + '"' : '') + '>',
-         '<head>',
-         head,
-         '<style>',
-         '.steez-highlight-failure { outline: 2px solid #ff0 !important; }',
-         '</style>',
-         '</head>',
-         '<body' + (that.bodyClass ? ' class="' + that.bodyClass + '"' : '') + '>',
-         options.fixtureHTML,
-         '</body>',
-         '</html>'].join('\n');
+    head = [
+     '<head>',
+     head,
+     '<style>',
+     '.steez-highlight-failure { outline: 2px solid #ff0 !important; }',
+     '</style>',
+     '</head>'].join('\n');
+    var frameHTML = options.fixtureHTML;
+    if(!/\<body[^]+\<\/body\>/i.test(frameHTML)){
+      // Fixture HTML doesn't contain a <body> element
+      frameHTML = '<body test-ignore>' + frameHTML + '</body>';
+    };
+    if(!/\<html[^]+\<\/html\>/i.test(frameHTML)){
+      // Fixture HTML doesn't contain a <html> element
+      frameHTML = '<html test-ignore>' + head + frameHTML + '</html>';
+    }else{
+      // Place <head> before <body>
+      var bodyPos = frameHTML.toLowerCase().indexOf('<body');
+      frameHTML = frameHTML.substr(0, bodyPos) + head + frameHTML.substr(bodyPos);
+    };
     if(callback){
       callback.call(that, undefined, frameHTML);
     };

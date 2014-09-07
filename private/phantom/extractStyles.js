@@ -30,8 +30,12 @@ page.onLoadFinished = function(status){
         var output = [];
         for(var i = 0; i < base.children.length; i++){
           var child = base.children[i];
+          var classes = '';
+          for(var j = 0; j<child.classList.length; j++){
+            classes += '.' + child.classList[j];
+          };
           var selector = baseSelector + '>' + child.nodeName + 
-                         (child.id ? '#' + child.id : '') +
+                         (child.id ? '#' + child.id : '') + classes +
                          ':nth-child(' + (i+1) + ')';
           // Grab matching rules
           // TODO: Seems to crash phantomjs...maybe webkit too old?
@@ -44,24 +48,31 @@ page.onLoadFinished = function(status){
 //             });
 //           };
 
+          var attributes = {};
+          if(!child.attributes.hasOwnProperty('test-ignore')){
+            attributes = elementStyleAttributes(child);
+          };
+
           output.push({
             selector: selector,
-            attributes: elementStyleAttributes(child),
+            attributes: attributes,
             children: extractChildStyles(child, selector)
           });
         };
         return output;
       };
+      // Add <body> children, then <html> and <body> separately.
       var elementStyles = extractChildStyles(document.body, 'BODY');
-      elementStyles.push({
-        selector: 'HTML',
-        attributes: elementStyleAttributes(document.documentElement),
-        children: []
-      });
-      elementStyles.push({
-        selector: 'BODY',
-        attributes: elementStyleAttributes(document.body),
-        children: []
+      [['HTML', document.documentElement], 
+       ['BODY', document.body]]
+      .forEach(function(additional){
+          if(!additional[1].attributes.hasOwnProperty('test-ignore')){
+          elementStyles.push({
+            selector: additional[0],
+            attributes: elementStyleAttributes(additional[1]),
+            children: []
+          });
+        };
       });
       return elementStyles;
     });

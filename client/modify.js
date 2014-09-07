@@ -6,6 +6,11 @@ Template.modifyDialog.fields = function(){
     {key: 'description',
      label: 'Description',
      textarea: true},
+    {key: 'interval',
+     label: 'Schedule Interval',
+     text:true,
+     help: 'Leave blank to not automatically run this test. Otherwise, specify ' +
+           'the number of minutes between each automated test run.'},
     {key: 'remoteStyles',
      label: 'Remote Styles',
      text: true,

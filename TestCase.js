@@ -17,7 +17,8 @@ TestCases.TestCase = function(id){
     return;
   }else{
     var data = TestCases.findOne(id);
-    if(data === undefined || data.owner !== Meteor.userId()){
+    // NOTE: checking data.owner not necessary due to query in Meteor.publish
+    if(data === undefined){
       this.notFound = true;
       return;
     };
@@ -45,6 +46,16 @@ TestCases.TestCase.prototype.setData = function(data, callback){
         data.hasNormative = false;
       };
     });
+    // Update nextRun if interval changes
+    if(data.interval !== undefined && data.interval !== that.interval){
+      if(data.interval === ''){
+        data.nextRun = undefined;
+      }else{
+        // Last run or current time + interval
+        data.nextRun = (that.lastRun ? that.lastRun : Date.now()) +
+                        (parseInt(data.interval, 10) * 1000 * 60);
+      };
+    };
 
     TestCases.update(this._id, {$set: data}, {}, function(error, result){
       if(callback){
@@ -477,7 +488,16 @@ TestCases.TestCase.prototype.run = function(options, callback){
       }else{
         TestCases.update(that._id, {$set: {history: [report]}});
       };
-      TestCases.update(that._id, {$set: {lastPassed: report.passed}});
+
+      var metaAttr = {
+        lastPassed: report.passed,
+        lastRun: Date.now()
+      };
+      if(that.interval){
+        metaAttr.nextRun = metaAttr.lastRun + (parseInt(that.interval, 10) * 1000 * 60);
+      };
+      TestCases.update(that._id, {$set: metaAttr});
+
       if(callback){
         callback.call(that, undefined, report);
       };

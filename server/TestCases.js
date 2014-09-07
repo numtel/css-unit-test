@@ -5,6 +5,7 @@ TestNormatives = new Meteor.Collection('TestNormatives');
 var fieldDefs = {
   title: ['Title', 'string', {min: 1, max: 100}],
   description: ['Description', 'string', {min: 1, max: 1000}],
+  interval: ['Schedule Interval', 'integer', {optional: true, min:1}],
   remoteStyles: ['Remote Styles', 'string', {min:0, max:1000}],
   cssFiles: ['CSS Files', 'string', {min: 1, max: 10000}],
   fixtureHTML: ['Fixture HTML', 'string', {min: 1, max: 100000}],
@@ -33,6 +34,17 @@ Meteor.publish("TestCases", function () {
     return [];
   };
   return TestCases.find({owner: this.userId});
+});
+
+Meteor.startup(function(){
+  // Run Scheduled Tests
+  Meteor.setInterval(function(){
+    TestCases.find({nextRun: {$lt: Date.now()}}, {fields: {_id: 1}})
+      .forEach(function(testDoc){
+        var test = new TestCases.TestCase(testDoc._id);
+        test.run();
+      });
+  }, 1000 * 61);
 });
 
 var loadTest = function(id){
@@ -153,16 +165,31 @@ var validatePost = function(data, isCreate){
   var validators = {
     string: function(key, value, label, options){
       if(options.min !== undefined && value.length < options.min){
-        return label + ' too short';
+        return label + ' is too short.';
       };
       if(options.max !== undefined && value.length > options.max){
-        return label + ' too long';
+        return label + ' is too long.';
+      };
+      return true;
+    },
+    integer: function(key, value, label, options){
+      if(value === '' && options.optional){
+        return true;
+      };
+      if(!/^[0-9-]+$/.test(value)){
+        return label + ' must be an integer.';
+      };
+      if(options.min !== undefined && value < options.min){
+        return label + ' must be at least ' + options.min + '.';
+      };
+      if(options.max !== undefined && value > options.max){
+        return label + ' must be no more than ' + options.max + '.';
       };
       return true;
     },
     integerList: function(key, value, label, options){
       if(!/^[0-9,\s]+$/.test(value)){
-        return label + ' may only include numbers, commas, and spaces';
+        return label + ' may only include numbers, commas, and spaces.';
       };
       return true;
     }

@@ -105,19 +105,26 @@ Template.details.fillFrame = function(){
   };
   setTimeout(function(){
     test.getHTML({}, function(error, result){
-      test.widthsArray.forEach(function(width){
-        var frameId = 'test-frame-' + test._id + '-' + width,
-            frameDoc = document.getElementById(frameId).contentWindow.document;
-        frameDoc.open();
-        frameDoc.write(result);
-        frameDoc.close();
-      });
+      Session.set('settings-error-'+test._id, error);
+      if(!error){
+        test.widthsArray.forEach(function(width){
+          var frameId = 'test-frame-' + test._id + '-' + width,
+              frameDoc = document.getElementById(frameId).contentWindow.document;
+          frameDoc.open();
+          frameDoc.write(result);
+          frameDoc.close();
+        });
+      };
     });
   }, 10);
 };
 
 Template.details.expanded = function(){
   return Session.get('failure-expanded-'+this.id);
+};
+
+Template.details.settingsError = function(){
+  return Session.get('settings-error-'+this._id);
 };
 
 Template.details.runError = function(){

@@ -10,8 +10,19 @@ page.viewportSize = {
   height: 800
 };
 
+var resourceFailures = [];
+page.onResourceReceived = function(response) {
+  if(response.stage === 'end' && response.status !== 200){
+    resourceFailures.push(response.url + 
+      '(' + response.status + ': ' + response.statusText + ')');
+  };
+};
+
 page.onLoadFinished = function(status){
   if(status === 'success'){
+    if(resourceFailures.length){
+      console.log('Failed to load: ' + resourceFailures.join(', '));
+    };
     var output = page.evaluate(function(){
       var elementStyleAttributes = function(el){
         var style = window.getComputedStyle(el);
@@ -66,7 +77,7 @@ page.onLoadFinished = function(status){
       [['HTML', document.documentElement], 
        ['BODY', document.body]]
       .forEach(function(additional){
-          if(!additional[1].attributes.hasOwnProperty('test-ignore')){
+        if(!additional[1].attributes.hasOwnProperty('test-ignore')){
           elementStyles.push({
             selector: additional[0],
             attributes: elementStyleAttributes(additional[1]),

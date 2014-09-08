@@ -21,7 +21,7 @@ page.open(url, function(status){
     });
     console.log(output);
   }else{
-    console.log('Error loading stylesheets from url!');
+    console.log('##ERROR##');
   };
   phantom.exit();
 });

@@ -117,13 +117,21 @@ TestCases.TestCase.prototype.stylesheetsFromUrl = function(url, callback){
 
     command.on('exit', function(code) {
       if(callback){
-        callback.call(that, stderr.length > 0 ? stderr : undefined, 
-                            stdout.length > 0 ? stdout : undefined);
+        if(stdout.substr(0,9) === '##ERROR##'){
+          callback.call(that, 1, undefined);
+        }else{
+          callback.call(that, stderr.length > 0 ? stderr : undefined, 
+                              stdout.length > 0 ? stdout : undefined);
+        };
       };
     });
   }else if(Meteor.isClient){
     Meteor.call('stylesheetsFromUrl', {id: that._id, url: url}, function(error, result){
       if(callback){
+        if(typeof result === 'string' && result.substr(0,9) === '##ERROR##'){
+          error = result.substr(9);
+          result = undefined;
+        };
         callback.call(that, error, result);
       };
     });
@@ -148,8 +156,11 @@ TestCases.TestCase.prototype.getHTML = function(options, callback){
       // Use spec'd css
       var linkTags = [];
       that.cssFiles.split('\n').forEach(function(href){
-        linkTags.push('<link href="' + href + '?' + Date.now() + '" ' +
-                      'type="text/css" rel="stylesheet" />');
+        if(href.trim() !== ''){
+          linkTags.push('<link href="' + href + 
+                        (href.indexOf('?') === -1 ? '?' + Date.now() : '')+ 
+                        '" type="text/css" rel="stylesheet" />');
+        };
       });
       head += linkTags.join('\n');
     }else{
@@ -187,7 +198,9 @@ TestCases.TestCase.prototype.getHTML = function(options, callback){
     if(this.remoteStyles){
       head = this.stylesheetsFromUrl(this.remoteStyles, function(error, result){
         if(error){
-          throw error;
+          if(callback){
+            callback.call(that, 'Error loading remote URL.', undefined);
+          };
         }else{
           finishOutput(result);
         };
@@ -441,7 +454,7 @@ TestCases.TestCase.prototype.run = function(options, callback){
     // Currently, no options to set...
 
     var normative = this.loadLatestNormative();
-    if(normative.length === 0){
+    if(!this.hasNormative || normative.length === 0){
       if(callback){
         callback.call(that, 'No normative exists!', undefined);
       };

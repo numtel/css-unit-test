@@ -4,11 +4,11 @@ TestNormatives = new Meteor.Collection('TestNormatives');
 
 var fieldDefs = {
   title: ['Title', 'string', {min: 1, max: 100}],
-  description: ['Description', 'string', {min: 1, max: 1000}],
+  description: ['Description', 'string', {min: 0, max: 1000}],
   interval: ['Schedule Interval', 'integer', {optional: true, min:1}],
   remoteStyles: ['Remote Styles', 'string', {min:0, max:1000}],
-  cssFiles: ['CSS Files', 'string', {min: 1, max: 10000}],
-  fixtureHTML: ['Fixture HTML', 'string', {min: 1, max: 100000}],
+  cssFiles: ['CSS Files', 'string', {min:0, max: 10000}],
+  fixtureHTML: ['Fixture HTML', 'string', {min: 0, max: 100000}],
   widths: ['Test Resolution Widths', 'integerList', {}]
 };
 
@@ -42,7 +42,45 @@ Meteor.startup(function(){
     TestCases.find({nextRun: {$lt: Date.now()}}, {fields: {_id: 1}})
       .forEach(function(testDoc){
         var test = new TestCases.TestCase(testDoc._id);
-        test.run();
+        test.run(function(error, result){
+          var recip = Meteor.users.findOne(test.owner);
+          if(recip.emails.length > 0){
+            var email = {
+              to: recip.emails[0].address,
+              from: 'no-reply@steeztest.me',
+            };
+            if(error){
+              email.subject = 'Test Error - ' + test.title + ' - SteezTest.me';
+              email.html = ['<p>An error has occurred while trying to run your test, ',
+                            test.title,
+                            ':</p><p>',
+                            error,
+                            '</p><p><a href="',
+                            Meteor.absoluteUrl(test._id),
+                            '">View Test Details</a></p>'].join('');
+              email.text = ['An error has occurred while trying to run your test, ',
+                            test.title,
+                            ':\n\n',
+                            error,
+                            '\n\nView test details at: ',
+                            Meteor.absoluteUrl(test._id)].join('');
+            }else if(!result.passed){
+              email.subject = 'Test Failure - ' + test.title + ' - SteezTest.me';
+              email.html = ['<p>Your test, ',
+                            test.title,
+                            ', has failed.</p><p><a href="',
+                            Meteor.absoluteUrl(test._id),
+                            '">View Test Details</a></p>'].join('');
+              email.text = ['Your test, ',
+                            test.title,
+                            ', has failed.\n\n View test details at: ',
+                            Meteor.absoluteUrl(test._id)].join('');
+            };
+            if(email.text){
+              Email.send(email);
+            };
+          };
+        });
       });
   }, 1000 * 61);
 });
@@ -130,9 +168,10 @@ Meteor.methods({
     var fut = new Future();
     loadTest(options.id).stylesheetsFromUrl(options.url, function(error, result){
       if(error){
-        throw error;
+        fut['return']('##ERROR##' + error);
+      }else{
+        fut['return'](result);
       };
-      fut['return'](result);
     });
     return fut.wait();
   },

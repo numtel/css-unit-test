@@ -9,16 +9,15 @@ Template.modifyDialog.fields = function(){
     {key: 'interval',
      label: 'Schedule Interval',
      text:true,
-     help: 'Leave blank to not automatically run this test. Otherwise, specify ' +
-           'the number of minutes between each automated test run.'},
+     help: 'Optional: Specify the number of minutes between each automated test run. You will receive an email on test failure or error.'},
     {key: 'remoteStyles',
      label: 'Remote Styles',
      text: true,
-     help: 'If not blank, the URL provided will be loaded and all of its stylesheets will be used in the test.'},
+     help: 'Optional: Specify a URL to copy stylesheets from.'},
     {key: 'cssFiles',
      label: 'CSS Files',
      textarea: true,
-     help: 'Instead of or in addition to remote stylesheets, place one HREF per line to require stylesheets.'},
+     help: 'Place one HREF per line to include individual stylesheets.'},
     {key: 'widths',
      label: 'Test Resolution Width',
      text: true,
@@ -90,6 +89,7 @@ Template.modifyDialog.events({
         $save.removeClass('disabled');
         if(error){
           Session.set('modifyDialogError', error.reason);
+          $.scrollTo($form.find('.alert'), 400, {axis:'y', offset: -20});
         }else{
           Template.list.setSelected(result);
           Session.set("showModifyDialog", false);
@@ -104,9 +104,12 @@ Template.modifyDialog.events({
         $save.removeClass('disabled');
         if(error){
           Session.set('modifyDialogError', error.reason);
+          $.scrollTo($form.find('.alert'), 400, {axis:'y', offset: -20});
         }else{
           Session.set("showModifyDialog", false);
           Session.set('modifyDialogError', undefined);
+          $.scrollTo($form.closest('.test-details').find('h2').eq(0), 
+                      400, {axis:'y', offset: -20});
         };
       });
     };

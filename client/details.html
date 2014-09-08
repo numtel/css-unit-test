@@ -1,5 +1,5 @@
 <template name="details">
-  <div class="col-md-9">
+  <div class="col-md-9 test-details">
     {{#if loading}}
       <div class="page-loading"></div>
     {{else}}
@@ -29,8 +29,14 @@
             {{/if}}
             {{#if runError}}
               <div class="alert alert-danger">
-                <strong>Error While Running Test:</strong>
+                <strong>Error:</strong>
                 {{runError}}
+              </div>
+            {{/if}}
+            {{#if settingsError}}
+              <div class="alert alert-warning">
+                <strong>Settings Error:</strong>
+                {{settingsError}}
               </div>
             {{/if}}
             <ul class="nav nav-tabs">

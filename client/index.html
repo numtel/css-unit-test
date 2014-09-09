@@ -4,26 +4,44 @@
 </head>
 
 <body>
-  {{#if showDeleteDialog}}
-    {{> deleteDialog}}
-  {{/if}}
-  {{> controls}}
   {{#if loggedIn}}
-    <div class="container">
-      {{> list}}
-      {{> details}}
+    {{#if showDeleteDialog}}
+      {{> deleteDialog}}
+    {{/if}}
+    {{> controls}}
+    <div class="content">
+      <div class="container">
+        {{> list}}
+        {{> details}}
+      </div>
     </div>
   {{else}}
+    {{> welcome}}
   {{/if}}
+  {{> footer}}
 </body>
 
 <template name="controls">
   <div class="logged-in-header">
-  <div class="container">
-    <a class="brand" href="/">SteezTest.me</a>
-    <ul class="nav pull-right">
-      <li>{{> loginButtons align="right"}}</li>
-    </ul>
+    <div class="container">
+      <a class="brand" href="/">SteezTest.me</a>
+      <ul class="nav pull-right">
+        {{> loginButtons align="right"}}
+      </ul>
+    </div>
   </div>
+</template>
+
+<template name="footer">
+  <div class="footer">
+    <div class="container">
+      <ul class="clearfix">
+        <li><i class="glyphicon glyphicon-copyright-mark"></i> 2014 SteezTest.me</li>
+        <li><a href="/">Home</a></li>
+        <li><a href="http://github.com/numtel/css-unit-test">Project</a></li>
+        <li><a href="http://github.com/numtel/css-unit-test/issues">Issues</a></li>
+        <li><a href="http://github.com/numtel/css-unit-test/wiki">Help</a></li>
+      </ul>
+    </div>
   </div>
 </template>

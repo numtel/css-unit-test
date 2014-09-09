@@ -5,6 +5,11 @@ Deps.autorun(function () {
   testCasesHandle = Meteor.subscribe('TestCases');
 });
 
+UI.registerHelper('resetURL', function(){
+  window.history.pushState('','','/');
+  Session.set('selected', undefined);
+});
+
 UI.registerHelper('logThis', function(){
   console.log(this);
 });

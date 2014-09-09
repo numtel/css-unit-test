@@ -8,7 +8,7 @@
 }
 
 body {
-  padding-bottom:100px;
+  background:#666;
 }
 
 h2 {
@@ -22,7 +22,6 @@ h2 {
 
 .logged-in-header {
   background:#67ABE6;
-  margin-bottom:20px;
   .brand,
   .dropdown-toggle {
     color: #fff;
@@ -30,8 +29,100 @@ h2 {
       text-decoration:underline;
     }
   }
-  .nav .open>a {
+  .nav>li.dropdown>a {
     background:none;
+  }
+}
+
+.welcome-header {
+  .gradient(#67ABE6, #C8E3FA);
+  color: #fff;
+  position:relative;
+  
+  .dropdown-toggle {
+    color: #fff;
+    &:hover {
+      text-decoration:underline;
+    }
+  }
+  .nav>li.dropdown>a {
+    background:none;
+  }
+  .topnav {
+    margin-bottom: 20px;
+    padding: 0;
+    border-bottom: 1px solid #D4E8FA;
+  }
+  .brand {
+    margin: 0;
+  }
+  .attention {
+    padding: 40px;
+  }
+  .callout {
+    font-size: 30px;
+    line-height:40px;
+  }
+  .response {
+    font-size: 24px;
+    line-height: 30px;
+    font-style:italic;
+  }
+  .signup {
+    >li { list-style:none; width:300px; margin:0 auto;}
+    .dropdown-toggle { display:none; }
+    .dropdown-menu { 
+      display:block; 
+      position:static;
+      background:none;
+      border-radius:0;
+      border:0;
+      box-shadow: none;
+    }
+  }
+}
+.welcome-content {
+  background:#fff;
+  color:#666;
+  h2 {
+    text-align:center;
+    font-size:36px;
+    line-height:60px;
+    margin:30px 0;
+  }
+  .feature {
+    text-align:center;
+    padding-bottom: 30px;
+    .glyphicon {
+      display:block;
+      font-size:72px;
+      color:#428bca;
+    }
+    h3 {
+      line-height: 30px;
+    }
+    p {
+      font-size: 16px;
+      line-height: 24px;
+    }
+  }
+}
+
+.content {
+  background: #fff;
+  padding: 20px 0 40px;
+}
+
+.footer {
+  padding:60px 20px;
+  color:#ccc;
+  a {
+    color:#eee;
+  }
+  li {
+    float:left;
+    list-style:none;
+    padding: 0 20px 0 0;
   }
 }
 
@@ -43,7 +134,7 @@ h2 {
 }
 
 #login-dropdown-list {
-  padding-top:13px;
+  padding-top:3px;
   .dropdown-menu {
     left:auto;
     right:0;

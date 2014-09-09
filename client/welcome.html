@@ -1,0 +1,48 @@
+<template name="welcome">
+  {{resetURL}}
+  <div class="welcome-header">
+    <div class="topnav container clearfix">
+      <h1 class="brand pull-left">SteezTest.me</h1>
+    </div>
+    <div class="banner container">
+      <div class="col-md-8 attention">
+        <p class="callout">Tired of overwritten CSS rules?</p>
+        <p class="response">Unit test critical blocks of HTML to know immediately when anything changes with their styles!</p>
+      </div>
+      <ul class="col-md-4 signup">
+      {{> loginButtons}}
+      </ul>
+    </div>
+  </div>
+  <div class="welcome-content">
+    <div class="container">
+      <h2>CSS Unit Testing</h2>
+      <div class="feature col-md-3">
+        <i class="glyphicon glyphicon-ok-circle"></i>
+        <h3>Improved Design Reliability</h3>
+        <p>Ensure new changes don't disrupt critical site components</p>
+      </div>
+      <div class="feature col-md-3">
+        <i class="glyphicon glyphicon-road"></i>
+        <h3>Style With Eaze</h3>
+        <p>Personal use will always be free. After the beta period, commerical users will be asked to contribute a licensing fee.</p>
+      </div>
+      <div class="feature col-md-3">
+        <i class="glyphicon glyphicon-cloud"></i>
+        <h3>Open Source</h3>
+        <p>Built with Meteor and available to run on your own infrastructure.</p>
+        <p>
+          <a href="http://github.com/numtel/css-unit-test" title="View Project on GitHub" class="github">
+            View Project on Github
+          </a>
+        </p>
+      </div>
+      <div class="feature col-md-3">
+        <i class="glyphicon glyphicon-time"></i>
+        <h3>5-Minute Setup</h3>
+        <p>Sign up and fill in fixture HTML then automatically receive an email when the style changes.</p>
+      </div>
+    </div>
+  </div>
+</template>
+

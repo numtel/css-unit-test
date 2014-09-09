@@ -3,84 +3,15 @@ Template.details.test = function(){
   if(test.notFound){
     return;
   };
-  if(test.history){
-    var history = test.history = test.history.reverse();
-    
-    var objToArray = function(obj){
-      var arr = [];
-      _.each(obj, function(item){
-        if(arr.length === 0){
-          item['first'] = true;
-        };
-        arr.push(item);
-      });
-      return arr;
-    };
-    var organizeBySelector = function(arr){
-      var out = {};
-      arr.forEach(function(failure){
-        if(!out.hasOwnProperty(failure['selector'])){
-          out[failure['selector']] = {
-            selector: failure['selector'],
-            instances: []
-          };
-        };
-        out[failure['selector']].instances.push(failure);
-      });
-      return objToArray(out);
-    };
-
-
-    history.forEach(function(testStatus){
-      _.each(testStatus.failures, function(elements, width){
-        testStatus.failures[width] = {elements: organizeBySelector(elements),
-                                      width: width,
-                                      runId: testStatus.id};
-        testStatus.failures[width].elements.forEach(function(element){
-          // Propagate values to children
-          ['width', 'runId'].forEach(function(key){
-            element[key] = testStatus.failures[width][key];
-          });
-        });
-      });
-      testStatus.failures = objToArray(testStatus.failures);
-
-      // Remove view widths without failures
-      var activeFailures = [];
-      testStatus.failures.forEach(function(failure){
-        if(failure.elements.length > 0){
-          if(activeFailures.length === 0){
-            failure.first = true;
-          };
-          activeFailures.push(failure);
-        };
-      });
-      testStatus.failures = activeFailures;
-
-      test.loadNormative(testStatus.normative, function(error, result){
-        if(error){
-          throw error;
-        };
-        _.each(testStatus.failures, function(failure){
-          test.getHTML({
-            fixtureHTML: testStatus.fixtureHTML,
-            normativeValue: result[0].value[failure.width]
-          },function(error, result){
-            Session.set('expected-' + testStatus.id + '-' + failure.width, result);
-          });
-
-          test.getHTML({
-            fixtureHTML: testStatus.fixtureHTML,
-            normativeValue: result[0].value[failure.width],
-            diff:  failure.elements
-          }, function(error, result){
-            Session.set('reported-' + testStatus.id + '-' + failure.width, result);
-          });
-        });
-      });
-    });
-  };
   return test;
+};
+
+Template.details.historyItems = function(){
+  var test = this;
+  return TestHistory.find({testCase: test._id}, {
+          sort: {time: -1},
+          fields: {passed: 1, time: 1, testCase: 1}
+        });
 };
 
 Template.details.testVar = function(data){
@@ -93,7 +24,7 @@ Template.details.widthList = function(){
   var test = this;
   var output = [];
   this.widthsArray.forEach(function(width){
-    output.push({width:width, _id: test._id, first: output.length === 0});
+    output.push({width:width, testId: test._id, first: output.length === 0});
   });
   return output;
 };
@@ -109,10 +40,13 @@ Template.details.fillFrame = function(){
       if(!error){
         test.widthsArray.forEach(function(width){
           var frameId = 'test-frame-' + test._id + '-' + width,
-              frameDoc = document.getElementById(frameId).contentWindow.document;
-          frameDoc.open();
-          frameDoc.write(result);
-          frameDoc.close();
+              frame = document.getElementById(frameId);
+          if(frame){
+            var frameDoc = frame.contentWindow.document;
+            frameDoc.open();
+            frameDoc.write(result);
+            frameDoc.close();
+          };
         });
       };
     });
@@ -120,7 +54,7 @@ Template.details.fillFrame = function(){
 };
 
 Template.details.expanded = function(){
-  return Session.get('failure-expanded-'+this.id);
+  return Session.get('failure-expanded-'+this._id);
 };
 
 Template.details.settingsError = function(){
@@ -151,12 +85,89 @@ Template.details.events({
     });
   },
   'click a.expand-details': function(event){
-    var key = 'failure-expanded-' + this.id,
+    var key = 'failure-expanded-' + this._id,
         expanded = Session.get(key);
     Session.set(key, !expanded);
     event.preventDefault();
   }
 });
+
+Template.historyDetails.fullHistoryItem = function(){
+  var objToArray = function(obj){
+    var arr = [];
+    _.each(obj, function(item){
+      if(arr.length === 0){
+        item['first'] = true;
+      };
+      arr.push(item);
+    });
+    return arr;
+  };
+  var organizeBySelector = function(arr){
+    var out = {};
+    arr.forEach(function(failure){
+      if(!out.hasOwnProperty(failure['selector'])){
+        out[failure['selector']] = {
+          selector: failure['selector'],
+          instances: []
+        };
+      };
+      out[failure['selector']].instances.push(failure);
+    });
+    return objToArray(out);
+  };
+
+  var testStatus = TestHistory.findOne(this._id),
+      test = Template.details.test();
+  _.each(testStatus.failures, function(elements, width){
+    testStatus.failures[width] = {elements: organizeBySelector(elements),
+                                  width: width,
+                                  runId: testStatus._id};
+    testStatus.failures[width].elements.forEach(function(element){
+      // Propagate values to children
+      ['width', 'runId'].forEach(function(key){
+        element[key] = testStatus.failures[width][key];
+      });
+    });
+  });
+  testStatus.failures = objToArray(testStatus.failures);
+
+  // Remove view widths without failures
+  var activeFailures = [];
+  testStatus.failures.forEach(function(failure){
+    if(failure.elements.length > 0){
+      if(activeFailures.length === 0){
+        failure.first = true;
+      };
+      activeFailures.push(failure);
+    };
+  });
+  testStatus.failures = activeFailures;
+
+  test.loadNormative(testStatus.normative, function(error, result){
+    if(error){
+      throw error;
+    };
+    _.each(testStatus.failures, function(failure){
+      test.getHTML({
+        fixtureHTML: testStatus.fixtureHTML,
+        normativeValue: result[0].value[failure.width]
+      },function(error, result){
+        Session.set('expected-' + testStatus._id + '-' + failure.width, result);
+      });
+
+      test.getHTML({
+        fixtureHTML: testStatus.fixtureHTML,
+        normativeValue: result[0].value[failure.width],
+        diff:  failure.elements
+      }, function(error, result){
+        Session.set('reported-' + testStatus._id + '-' + failure.width, result);
+      });
+    });
+  });
+  return testStatus;
+};
+
 
 Template.historyDetails.fillFrame = function(){
   var failure = this,
@@ -166,10 +177,13 @@ Template.historyDetails.fillFrame = function(){
   if(htmlReady){
     setTimeout(function(){
       frames.forEach(function(frameId){
-        var frameDoc = document.getElementById(frameId).contentWindow.document;
-        frameDoc.open();
-        frameDoc.write(Session.get(frameId));
-        frameDoc.close();
+        var frame = document.getElementById(frameId);
+        if(frame){
+          var frameDoc = frame.contentWindow.document;
+          frameDoc.open();
+          frameDoc.write(Session.get(frameId));
+          frameDoc.close();
+        };
       });
     }, 10);
   };

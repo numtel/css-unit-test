@@ -1,4 +1,7 @@
 TestCases = new Meteor.Collection('TestCases');
+TestHistory = new Meteor.Collection('TestHistory');
+
+Meteor.subscribe('TestHistory');
 
 var testCasesHandle;
 Deps.autorun(function () {

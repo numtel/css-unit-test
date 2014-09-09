@@ -492,15 +492,17 @@ TestCases.TestCase.prototype.run = function(options, callback){
       });
       var report = {time: new Date(), 
                     passed: totalFailures === 0,
-                    id: Random.id(),
+                    _id: Random.id(),
                     normative: normative[0]._id,
                     fixtureHTML: that.fixtureHTML,
+                    owner: that.owner,
+                    testCase: that._id,
                     failures: failures};
-      if(that.history !== undefined && that.history.length !== undefined){
-        TestCases.update(that._id, {$push: {history: report}});
-      }else{
-        TestCases.update(that._id, {$set: {history: [report]}});
-      };
+      TestHistory.insert(report, function(error, result){
+        if(error){
+          console.log('TestHistory Insertion Error', error);
+        };
+      });
 
       var metaAttr = {
         lastPassed: report.passed,

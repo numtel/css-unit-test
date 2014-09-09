@@ -1,6 +1,7 @@
 var Future = Npm.require('fibers/future');
 TestCases = new Meteor.Collection('TestCases'); // Parent Collection
 TestNormatives = new Meteor.Collection('TestNormatives');
+TestHistory = new Meteor.Collection('TestHistory');
 
 var fieldDefs = {
   title: ['Title', 'string', {min: 1, max: 100}],
@@ -34,6 +35,13 @@ Meteor.publish("TestCases", function () {
     return [];
   };
   return TestCases.find({owner: this.userId});
+});
+
+Meteor.publish("TestHistory", function () {
+  if(this.userId==null){
+    return [];
+  };
+  return TestHistory.find({owner: this.userId});
 });
 
 Meteor.startup(function(){
@@ -82,7 +90,7 @@ Meteor.startup(function(){
           };
         });
       });
-  }, 1000 * 61);
+  }, 1000 * 31);
 });
 
 var loadTest = function(id){

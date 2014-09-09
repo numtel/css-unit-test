@@ -59,14 +59,10 @@ page.onLoadFinished = function(status){
 //             });
 //           };
 
-          var attributes = {};
-          if(!child.attributes.hasOwnProperty('test-ignore')){
-            attributes = elementStyleAttributes(child);
-          };
-
           output.push({
+            ignore: child.attributes.hasOwnProperty('test-ignore'),
             selector: selector,
-            attributes: attributes,
+            attributes: elementStyleAttributes(child),
             children: extractChildStyles(child, selector)
           });
         };
@@ -77,13 +73,12 @@ page.onLoadFinished = function(status){
       [['HTML', document.documentElement], 
        ['BODY', document.body]]
       .forEach(function(additional){
-        if(!additional[1].attributes.hasOwnProperty('test-ignore')){
-          elementStyles.push({
-            selector: additional[0],
-            attributes: elementStyleAttributes(additional[1]),
-            children: []
-          });
-        };
+        elementStyles.push({
+          ignore: additional[1].attributes.hasOwnProperty('test-ignore'),
+          selector: additional[0],
+          attributes: elementStyleAttributes(additional[1]),
+          children: []
+        });
       });
       return elementStyles;
     });

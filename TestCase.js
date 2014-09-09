@@ -416,26 +416,28 @@ var compareStyles = function(a, b){
   };
 
   for(var i = 0; i<a.length; i++){
-    _.each(a[i].attributes, function(aVal, key){
-      var skip;
-      filterRules.forEach(function(rule){
-        if(rule.test(key)){
-          skip = true;
+    if(!a[i].ignore){
+      _.each(a[i].attributes, function(aVal, key){
+        var skip;
+        filterRules.forEach(function(rule){
+          if(rule.test(key)){
+            skip = true;
+          };
+        });
+        if(skip){
+          return;
+        };
+        var bVal = b[i].attributes[key];
+        if(bVal !== aVal){
+          failures.push({
+            'selector': a[i].selector,
+            'key': key,
+            'aVal': aVal,
+            'bVal': bVal
+          });
         };
       });
-      if(skip){
-        return;
-      };
-      var bVal = b[i].attributes[key];
-      if(bVal !== aVal){
-        failures.push({
-          'selector': a[i].selector,
-          'key': key,
-          'aVal': aVal,
-          'bVal': bVal
-        });
-      };
-    });
+    };
   };
   return failures;
 };

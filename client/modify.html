@@ -8,8 +8,10 @@
         {{/if}}
       </h2>
     {{/if}}
-    {{#if error}}
-      <div class="alert alert-danger">{{error}}</div>
+    {{#if status}}
+      <div class="alert alert-{{#if statusSuccess}}success{{else}}danger{{/if}}">
+        {{status}}
+      </div>
     {{/if}}
 
 

@@ -6,8 +6,7 @@ Deps.autorun(function () {
 });
 
 UI.registerHelper('resetURL', function(){
-  window.history.pushState('','','/');
-  Session.set('selected', undefined);
+  Template.list.setSelected();
 });
 
 UI.registerHelper('logThis', function(){
@@ -37,4 +36,11 @@ UI.registerHelper('testSelected', function(){
 
 UI.registerHelper('loading', function () {
   return !testCasesHandle.ready();
+});
+
+Template.controls.events({
+  'click a.brand': function(event){
+    Template.list.setSelected();
+    event.preventDefault();
+  }
 });

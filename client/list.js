@@ -31,11 +31,11 @@ Template.list.active = function () {
 Template.list.setSelected = function(id){
   if(id !== Session.get('selected')){
     Session.set('selected', id);
-    Session.set('history', undefined);
-    window.history.pushState('','',id);
+    window.history.pushState('','',id === undefined ? '/' : id);
   };
   Session.set('showModifyDialog', false);
   Session.set('modifyDialogType', 'edit');
+  Session.set("modifyDialogStatus", null);
 };
 
 Template.list.events({
@@ -44,7 +44,7 @@ Template.list.events({
     event.preventDefault();
   },
   'click a.create': function (event) {
-    Session.set("modifyDialogError", null);
+    Session.set("modifyDialogStatus", null);
     Session.set("modifyDialogType", 'create');
     Session.set("showModifyDialog", true);
     event.preventDefault();

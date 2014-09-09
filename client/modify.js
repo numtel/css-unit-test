@@ -88,13 +88,13 @@ Template.modifyDialog.events({
         $save.parent().removeClass('loading');
         $save.removeClass('disabled');
         if(error){
-          Session.set('modifyDialogError', error.reason);
+          Session.set('modifyDialogStatus', error.reason);
           $.scrollTo($form.find('.alert'), 400, {axis:'y', offset: -20});
         }else{
           Template.list.setSelected(result);
           Session.set("showModifyDialog", false);
           Session.set("modifyDialogType", 'edit');
-          Session.set('modifyDialogError', undefined);
+          Session.set('modifyDialogStatus', undefined);
         };
       });
     }else{
@@ -103,11 +103,11 @@ Template.modifyDialog.events({
         $save.parent().removeClass('loading');
         $save.removeClass('disabled');
         if(error){
-          Session.set('modifyDialogError', error.reason);
+          Session.set('modifyDialogStatus', error.reason);
           $.scrollTo($form.find('.alert'), 400, {axis:'y', offset: -20});
         }else{
           Session.set("showModifyDialog", false);
-          Session.set('modifyDialogError', undefined);
+          Session.set('modifyDialogStatus', 'Changes saved successfully.');
           $.scrollTo($form.closest('.test-details').find('h2').eq(0), 
                       400, {axis:'y', offset: -20});
         };
@@ -127,8 +127,13 @@ Template.modifyDialog.events({
   }
 });
 
-Template.modifyDialog.error = function () {
-  return Session.get("modifyDialogError");
+Template.modifyDialog.status = function () {
+  return Session.get("modifyDialogStatus");
+};
+
+Template.modifyDialog.statusSuccess = function(){
+  var status = Template.modifyDialog.status();
+  return typeof status === 'string' && status.indexOf('success') !== -1;
 };
 
 

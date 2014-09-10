@@ -10,6 +10,7 @@ Template.details.historyItems = function(){
   var test = this;
   return TestHistory.find({testCase: test._id}, {
           sort: {time: -1},
+          limit: 100,
           fields: {passed: 1, time: 1, testCase: 1}
         });
 };

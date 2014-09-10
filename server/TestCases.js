@@ -44,6 +44,20 @@ Meteor.publish("TestHistory", function () {
   return TestHistory.find({owner: this.userId});
 });
 
+var determineUserEmail = function(user){
+  var email;
+  if(user.emails && user.emails.length > 0){
+    email = user.emails[0].address;
+  }else if(user.services){
+    _.each(user.services, function(serviceData, service){
+      if(serviceData.email){
+        email = serviceData.email;
+      };
+    });
+  };
+  return email;
+};
+
 Meteor.startup(function(){
   // Run Scheduled Tests
   Meteor.setInterval(function(){
@@ -51,10 +65,11 @@ Meteor.startup(function(){
       .forEach(function(testDoc){
         var test = new TestCases.TestCase(testDoc._id);
         test.run(function(error, result){
-          var recip = Meteor.users.findOne(test.owner);
-          if(recip.emails.length > 0){
+          var recip = Meteor.users.findOne(test.owner),
+              recipEmail = determineUserEmail(recip);
+          if(recipEmail){
             var email = {
-              to: recip.emails[0].address,
+              to: recipEmail,
               from: 'no-reply@steeztest.me',
             };
             if(error){

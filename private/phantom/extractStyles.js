@@ -3,6 +3,7 @@ var system = require('system');
 var fs = require('fs');
 var htmlFile = system.args[1];
 var testWidth = system.args[2];
+var testURL = system.args[3];
 var pageHTML = fs.read(htmlFile);
 
 page.viewportSize = {
@@ -24,8 +25,10 @@ page.onLoadFinished = function(status){
       console.log('Failed to load: ' + resourceFailures.join(', '));
     };
     var output = page.evaluate(function(){
-      var elementStyleAttributes = function(el){
-        var style = window.getComputedStyle(el);
+      var elementStyleAttributes = function(el, style){
+        if(style === undefined){
+          style = window.getComputedStyle(el);
+        };
         var attributes = {};
         var propertyName;
         for(var j = 0; j<style.length; j++){
@@ -48,21 +51,25 @@ page.onLoadFinished = function(status){
           var selector = baseSelector + '>' + child.nodeName + 
                          (child.id ? '#' + child.id : '') + classes +
                          ':nth-child(' + (i+1) + ')';
-          // Grab matching rules
-          // TODO: Seems to crash phantomjs...maybe webkit too old?
-//           var ruleList = child.ownerDocument.defaultView.getMatchedCSSRules(child, '');
-//           var rules = [];
-//           for(var j = 0; j<ruleList.length; j++){
-//             rules.push({
-//               selector: ruleList[j].selectorText,
-//               sheet: ruleList[j].parentStyleSheet.href
-//             });
-//           };
+
+          // getMatchedCSSRules only works for stylesheets from the same origin
+          var ruleList = child.ownerDocument.defaultView.getMatchedCSSRules(child, '');
+          var rules = [];
+          if(ruleList){
+            for(var j = 0; j<ruleList.length; j++){
+              rules.push({
+                selector: ruleList[j].selectorText,
+                sheet: ruleList[j].parentStyleSheet.href,
+                attributes: elementStyleAttributes(undefined, ruleList[j].style)
+              });
+            };
+          };
 
           output.push({
             ignore: child.attributes.hasOwnProperty('test-ignore'),
             selector: selector,
             attributes: elementStyleAttributes(child),
+            rules: rules,
             children: extractChildStyles(child, selector)
           });
         };
@@ -91,4 +98,4 @@ page.onLoadFinished = function(status){
   };
 };
 
-page.setContent(pageHTML, 'http://localhost/');
+page.setContent(pageHTML, testURL);

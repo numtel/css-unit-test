@@ -96,9 +96,17 @@ Template.details.events({
 Template.historyDetails.fullHistoryItem = function(){
   var objToArray = function(obj){
     var arr = [];
-    _.each(obj, function(item){
+    _.each(obj, function(item, key){
+      if(typeof item !== 'object'){
+        item = {
+          value: item
+        };
+      };
       if(arr.length === 0){
         item['first'] = true;
+      };
+      if(arr.key === undefined){
+        item['key'] = key;
       };
       arr.push(item);
     });
@@ -108,8 +116,24 @@ Template.historyDetails.fullHistoryItem = function(){
     var out = {};
     arr.forEach(function(failure){
       if(!out.hasOwnProperty(failure['selector'])){
+        ['aRules', 'bRules'].forEach(function(reorgKey){
+          if(failure[reorgKey] && failure[reorgKey].length){
+            if(failure['ruleSets'] === undefined){
+              failure['ruleSets'] = [];
+            };
+            failure[reorgKey].forEach(function(rule){
+              rule.attributes = objToArray(rule.attributes);
+            });
+            failure['ruleSets'].push({
+              expected: reorgKey === 'aRules',
+              reported: reorgKey === 'bRules',
+              rules: failure[reorgKey]
+            });
+          };
+        });
         out[failure['selector']] = {
           selector: failure['selector'],
+          ruleSets: failure['ruleSets'],
           instances: []
         };
       };
@@ -194,7 +218,7 @@ Template.historyDetails.events({
   'click a.failure-el': function(event){
     event.preventDefault();
     var failure = this,
-        selector = $(event.currentTarget).parent().attr('data-selector'),
+        selector = $(event.currentTarget).closest('li').attr('data-selector'),
         frames = ['expected-' + failure.runId + '-' + failure.width,
                   'reported-' + failure.runId + '-' + failure.width],
         failureClass = 'steez-highlight-failure';
@@ -204,5 +228,13 @@ Template.historyDetails.events({
       $frameDoc.find('.' + failureClass).removeClass(failureClass);
       $el.addClass(failureClass);
     });
+  },
+  'click .rule-tabs a': function(event){
+    event.preventDefault();
+    var $el = $(event.currentTarget),
+        $parent = $el.closest('li[data-selector]'),
+        newActive = $el.attr('href').substr(1);
+    $parent.children('.computed.active, .rule-set.active').removeClass('active');
+    $parent.children('.' + newActive).addClass('active');
   }
 });

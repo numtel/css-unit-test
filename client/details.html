@@ -146,19 +146,57 @@
           <ul class="failures">
             {{#each elements}}
               <li data-selector="{{selector}}" class="clearfix">
-                <a href="#" class="failure-el" title="Highlight element in preview">
-                  {{selector}}
-                </a>
-                {{#each instances}}
-                <dl>
-                  <dt>Property Name</dt>
-                  <dd class="name">{{key}}</dd>
-                  <dt>Expected Value</dt>
-                  <dd class="expected">{{aVal}}</dd>
-                  <dt>Actual Value</dt>
-                  <dd class="actual">{{bVal}}</dd>
-                </dl>
-                {{/each}}
+                <h4>
+                  <a href="#" class="failure-el" title="Highlight element in preview">
+                    {{selector}}
+                  </a>
+                </h4>
+                {{#if ruleSets}}
+                  <ul class="rule-tabs nav nav-tabs">
+                    <li class="active">
+                      <a href="#computed" data-toggle="tab">Computed Styles</a>
+                    </li>
+                    <li>
+                      <a href="#reported" data-toggle="tab">Reported Rules</a>
+                    </li>
+                    <li>
+                      <a href="#expected" data-toggle="tab">Expected Rules</a>
+                    </li>
+                  </ul>
+                {{/if}}
+                <div class="computed active">
+                  <dl class="dl-horizontal">
+                    {{#each instances}}
+                      <dt title="{{key}}">{{key}}</dt>
+                      <dd>
+                        <span class="expected">{{aVal}}</span>
+                        <span class="actual">{{bVal}}</span>
+                      </dd>
+                    {{/each}}
+                  </dl>
+                </div>
+                {{#if ruleSets}}
+                  {{#each ruleSets}}
+                    <div class="rule-set
+                        {{#if expected}}expected{{/if}}
+                        {{#if reported}}reported{{/if}}">
+                      <ul>
+                        {{#each rules}}
+                          <li>
+                            <span class="file">{{sheet}}</span>
+                            <span class="selector">{{selector}}</span>
+                            <dl class="dl-horizontal">
+                              {{#each attributes}}
+                                <dt title="{{key}}">{{key}}</dt>
+                                <dd>{{value}}</dd>
+                              {{/each}}
+                            </dl>
+                          </li>
+                        {{/each}}
+                      </ul>
+                    </div>
+                  {{/each}}
+                {{/if}}
               </li>
             {{/each}}
           </ul>

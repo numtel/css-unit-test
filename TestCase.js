@@ -40,6 +40,7 @@ TestCases.TestCase.prototype.setData = function(data, callback){
     // Require new normative if these fields change
     ['cssFiles', 
      'widths', 
+     'testURL',
      'fixtureHTML', 
      'remoteStyles'].forEach(function(field){
       if(data[field] !== undefined && data[field] !== that[field]){
@@ -240,7 +241,10 @@ TestCases.TestCase.prototype.extractStyles = function(callback){
           var cmdOutput = '', commands = [];
           that.widthsArray.forEach(function(testWidth){
             command = shell.spawn(phantomjs.path, 
-              ['assets/app/phantom/extractStyles.js', htmlFile, testWidth]);
+              ['assets/app/phantom/extractStyles.js', 
+               htmlFile, 
+               testWidth,
+               that.testURL ? that.testURL : 'http://localhost/' ]);
             commands.push(command);
 
             ['stdout', 'stderr'].forEach(function(outVar){
@@ -433,7 +437,9 @@ var compareStyles = function(a, b){
             'selector': a[i].selector,
             'key': key,
             'aVal': aVal,
-            'bVal': bVal
+            'bVal': bVal,
+            'aRules': a[i].rules,
+            'bRules': b[i].rules
           });
         };
       });
@@ -470,13 +476,13 @@ TestCases.TestCase.prototype.run = function(options, callback){
         };
         return;
       };
-      var failures = {};
+      var failures = {}, errorOccurred = false;
       _.each(styles, function(viewStyles, viewWidth){
         if(normative[0].value[viewWidth] === undefined){
           if(callback){
             callback.call(that, 'Normative widths mismatch!', undefined);
           };
-          return;
+          errorOccurred = true;
         };
         try{
           failures[viewWidth] = compareStyles(normative[0].value[viewWidth], viewStyles);
@@ -484,9 +490,12 @@ TestCases.TestCase.prototype.run = function(options, callback){
           if(callback){
             callback.call(that, error, undefined);
           };
-          return;
+          errorOccurred = true;
         };
       });
+      if(errorOccurred){
+        return;
+      };
       
       var totalFailures = 0;
       _.each(failures, function(viewFailures, viewWidth){

@@ -18,6 +18,11 @@ Template.modifyDialog.fields = function(){
      label: 'CSS Files',
      textarea: true,
      help: 'Place one HREF per line to include individual stylesheets.'},
+    {key: 'testURL',
+     label: 'Test URL',
+     text: true,
+     help: 'Should match the protocol and server name of loaded stylesheets. ' + 
+           'Required to view which rules applied to elements.'},
     {key: 'widths',
      label: 'Test Resolution Width',
      text: true,

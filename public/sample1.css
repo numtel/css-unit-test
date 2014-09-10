@@ -1,14 +1,14 @@
 body{ background-color:#c9f; }
 
 h1 { color:#f03; }
-h2 {color:#0cf; border-bottom:2px solid #0f8;}
+h2 {color:#0cf; border-bottom:7px solid #048;}
 h2{text-decoration:underline;}
-h1{border:1px solid #f00; padding-bottom:19px;}
-em{color:#09c;}
+h1{border:5px solid #f00; padding-bottom:10px;}
+em{color:#59f;}
 
 
 @media screen and (max-width: 980px) {
   h1 {color:#3c9; text-shadow: 1px 3px 4px #ff0000;}
-  .banana { color:#ff0; }
-  html {border:4px solid #f00; }
+  .banana { color:#ff4; }
+  html {border:4px solid #f50; }
 }

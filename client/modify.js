@@ -13,15 +13,18 @@ Template.modifyDialog.fields = function(){
     {key: 'remoteStyles',
      label: 'Remote Styles',
      text: true,
-     help: 'Optional: Specify a URL to copy stylesheets from.'},
+     help: 'Optional: Specify a URL to copy stylesheets from. (e.g. http://example.com/)'},
     {key: 'cssFiles',
      label: 'CSS Files',
      textarea: true,
-     help: 'Place one HREF per line to include individual stylesheets.'},
+     help: 'Place one HREF per line to include individual stylesheets. ' +
+           '(e.g. http://example.com/css/main.css)'},
     {key: 'testURL',
      label: 'Test URL',
      text: true,
-     help: 'Should match the protocol and server name of loaded stylesheets. ' + 
+     help: '<a href="#" class="btn btn-default pull-right make-guess">' +
+            'Guess from Remote Styles/CSS Files</a>' + 
+           'Should match the protocol and server name of loaded stylesheets.<br>' + 
            'Required to view which rules applied to elements.'},
     {key: 'widths',
      label: 'Test Resolution Width',
@@ -68,6 +71,26 @@ Template.deleteDialog.test = function(){
 };
 
 Template.modifyDialog.events({
+  'click .make-guess': function(event, template){
+    event.preventDefault();
+    var remoteStyles = template.find('.remoteStyles').value,
+        cssFiles = template.find('.cssFiles').value,
+        guesses = [],
+        urlMatch = /https?\:\/\/.+\//;
+    if(remoteStyles && urlMatch.test(remoteStyles)){
+      guesses.push(urlMatch.exec(remoteStyles)[0]);
+    };
+    if(cssFiles.trim() !== ''){
+      cssFiles.split('\n').forEach(function(cssUrl){
+        if(cssUrl.trim() !== '' && urlMatch.test(cssUrl)){
+          guesses.push(urlMatch.exec(cssUrl)[0]);
+        };
+      });
+    };
+    // Return most guessed
+    var finalGuess = _.chain(guesses).countBy().pairs().max(_.last).head().value();
+    template.find('.testURL').value = finalGuess;
+  },
   'click .duplicate': function(event, template){
     event.preventDefault();
     var test = Template.modifyDialog.test();

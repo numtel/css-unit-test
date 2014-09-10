@@ -1,7 +1,7 @@
 css-unit-test
 =============
 
-**Not yet functional, check back soon!**
+http://steeztest.me/
 
 CSS Unit Test Application (made with Meteor)
 

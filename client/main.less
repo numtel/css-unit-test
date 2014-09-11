@@ -36,6 +36,12 @@ h2 {
       text-decoration:underline;
     }
   }
+  .brand {
+    float:left;
+  }
+  .nav {
+    float:right;
+  }
   .nav>li.dropdown>a {
     background:none;
   }
@@ -182,13 +188,14 @@ iframe {
 
 .nav-tabs {
   .descriptor { 
-    line-height: 36px;
+    line-height: 42px;
     padding-right:10px;
   }
 }
 
 .test-actions {
   padding-left: 25px;
+  margin-bottom: 20px;
   &.loading {
     background:url(ajax-loader-small.gif) no-repeat center left;
   }
@@ -205,6 +212,7 @@ iframe {
 
 .test-preview {
   iframe {
+    overflow:hidden;
     display:none;
     &.active {
       display:block;
@@ -283,9 +291,6 @@ iframe {
       }
       >.nav-tabs {
         float:right;
-        position:relative;
-        top: -42px;
-        margin-bottom: -41px;
       }
       iframe {
         width: 100%;
@@ -299,7 +304,6 @@ iframe {
     }
     
     .rule-tabs {
-      margin-bottom:10px;
     }
 
     ul.failures {
@@ -337,9 +341,17 @@ iframe {
     .computed,
     .rule-set {
       display:none;
+      background:#fff;
+      padding: 10px;
+      margin-bottom:10px;
+      border:1px solid #ddd;
       &.active{
         display:block;
       }
+    }
+    .rule-tabs + .computed,
+    .rule-set {
+      border-width: 0 1px 1px 1px;
     }
     .rule-set {
       ul {
@@ -375,3 +387,50 @@ iframe {
   }
 }
 
+@media only screen and (max-width:991px){
+  .test-details {
+    margin-top:20px;
+    border-top: 1px solid #ccc;
+    padding-top: 20px;
+  }
+}
+
+@media only screen and (max-width:767px){
+  .welcome-header {
+    .brand {
+      margin-left:10px;
+    }
+  }
+}
+
+@media only screen and (max-width:399px){
+  .logged-in-header {
+    .brand {
+      display:block;
+      float:none;
+      text-align:center;
+    }
+    .nav {
+      text-align:center;
+      float:none;
+      li {
+        display:inline-block;
+      }
+    }
+  }
+  .footer {
+    li {
+      float:none;
+    }
+  }
+}
+
+@media only screen and (max-width:359px){
+  .welcome-header {
+    .banner {
+      .signup {
+        margin: 0 -20px;
+      }
+    }
+  }
+}

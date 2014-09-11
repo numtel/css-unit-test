@@ -24,11 +24,15 @@ TestCases.TestCase = function(id){
     };
   };
 
-  _.extend(this, data);
+  extendData(this, data);
+};
+
+var extendData = function(obj, data){
+  _.extend(obj, data);
 
   // Convert widths string into array
-  if(this.widths){
-    this.widthsArray = this.widths.split(',').map(function(width){
+  if(obj.widths){
+    obj.widthsArray = obj.widths.split(',').map(function(width){
       return parseInt(width.trim(), 10);
     });
   };
@@ -59,6 +63,7 @@ TestCases.TestCase.prototype.setData = function(data, callback){
     };
 
     TestCases.update(this._id, {$set: data}, {}, function(error, result){
+      extendData(that, data);
       if(callback){
         callback.call(this, error, result);
       };

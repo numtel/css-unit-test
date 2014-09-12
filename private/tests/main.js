@@ -12,8 +12,7 @@ var colors = require('./lib/colors');
 console.log('CSS-Unit-Test App Unit Test Suite'.bold);
 
 // Check if running from root by context
-if(!fs.existsSync('client') || !fs.existsSync('private') ||
-    !fs.existsSync('server') || !fs.existsSync('public')) {
+if(!fs.existsSync('private/tests/main.js')) {
   console.log('Must be run from app root directory!'.red.italic.inverse);
   process.exit(1);
 };
@@ -22,12 +21,20 @@ console.time('Run Time');
 
 var mockups = require('./mockups');
 
-// Load TestCase class
-(function(Meteor, TestCases, Npm){
+// Load TestCase class in its expected context
+(function(Meteor, 
+          TestCases, 
+          TestNormatives, 
+          Npm, 
+          Random){
   // Refers to the actual source file
   var fileContents = fs.readFileSync('TestCase.js', "utf8");
   eval(fileContents);
-})(mockups.meteorServer, mockups.testCases, mockups.npm);
+})(mockups.meteorServer, 
+   mockups.testCases, 
+   mockups.testNormatives,
+   mockups.npm, 
+   mockups.random);
 
 var lastLog, logClosure = function(testFile, testKey){
   return function(val){
@@ -105,7 +112,10 @@ tests.forEach(function(testFile){
     };
     var retval;
     try{
-      retval = test(mockups.testCases, logClosure(testFile, testKey), wait);
+      retval = test(logClosure(testFile, testKey), 
+                    wait, 
+                    mockups.testCases, 
+                    mockups.testNormatives);
     }catch(error){
       status = error;
     };

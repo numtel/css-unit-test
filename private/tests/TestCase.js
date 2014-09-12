@@ -1,7 +1,8 @@
 var _ = require('./lib/underscore-min');
+var mockups = require('./mockups');
 var _id = 'test1';
 
-// exports.test_xxx = function(TestCases, log, wait){
+// exports.test_xxx = function(log, wait, TestCases){
 //   var datas = [
 //      ...
 //   ];
@@ -26,14 +27,14 @@ var multipleDatas = function(datas, wait, func){
   return wait;
 };
 
-exports.not_found = function(TestCases, log, wait){
+exports.not_found = function(log, wait, TestCases){
   var test = new TestCases.TestCase('invalid_id');
   if(test.notFound !== true){
     throw 'Did not return notFound';
   };
 };
 
-exports.data_is_loaded = function(TestCases, log, wait){
+exports.data_is_loaded = function(log, wait, TestCases){
   var test = new TestCases.TestCase(_id);
   var mockup = TestCases.findOne(_id);
   _.each(mockup, function(val, key){
@@ -43,7 +44,7 @@ exports.data_is_loaded = function(TestCases, log, wait){
   });
 };
 
-exports.widths_to_array = function(TestCases, log, wait){
+exports.widths_to_array = function(log, wait, TestCases){
   var test = new TestCases.TestCase(_id);
   if(test.widthsArray.length !== 2 ||
      test.widthsArray[0] !== 1024 ||
@@ -52,7 +53,7 @@ exports.widths_to_array = function(TestCases, log, wait){
   };
 };
 
-exports.test_setData = function(TestCases, log, wait){
+exports.test_setData = function(log, wait, TestCases){
   // setData does not validate inputs. That happens before this function,
   // if necessary.
 
@@ -139,7 +140,7 @@ exports.test_setData = function(TestCases, log, wait){
 };
 
 
-exports.test_styleSheetsFromUrl = function(TestCases, log, wait){
+exports.test_styleSheetsFromUrl = function(log, wait, TestCases){
   var test = new TestCases.TestCase(_id);
   test.stylesheetsFromUrl('http://google.com/', function(error, result){
     if(error){
@@ -159,7 +160,7 @@ exports.test_styleSheetsFromUrl = function(TestCases, log, wait){
   });
 };
 
-exports.test_getHTML = function(TestCases, log, wait){
+exports.test_getHTML = function(log, wait, TestCases){
   var datas = [
     // Test with default mockup
     {options: {},
@@ -281,4 +282,90 @@ exports.test_getHTML = function(TestCases, log, wait){
       wait.finished();
     });
   });
+};
+
+
+
+exports.test_extractStyles = function(log, wait, TestCases){
+  var test = new TestCases.TestCase(_id);
+  test.extractStyles(function(error, result){
+    if(error){
+      throw error;
+    };
+    // Should be the results of phantomjs as a json object for each width
+    var expected = mockups.npm.require('fs').readFileSync('sometest.out');
+
+    test.widthsArray.forEach(function(width){
+      if(result[width] === undefined){
+        throw 'Width not found: ' + width;
+      };
+      if(JSON.stringify(result[width]) !== expected){
+        throw 'Does not match mockup';
+      };
+    });
+
+    wait.done();
+  });
+  return wait;
+};
+
+exports.test_setNormative = function(log, wait, TestCases, TestNormatives){
+  var test = new TestCases.TestCase(_id);
+  var updateCount = TestCases.updateIds.length;
+  var insertCount = TestNormatives.insertData.length;
+  test.setNormative(function(error, result){
+    // Should not error
+    if(error){
+      throw error;
+    };
+
+    // Check result
+    if(result._id.substr(0,7) !== 'random-'){
+      throw 'Missing normative id';
+    };
+    if(result.testCase !== _id){
+      throw 'Missing test id';
+    };
+    if(result.owner !== test.owner){
+      throw 'Missing test owner';
+    };
+    if(Math.abs(result.timestamp-Date.now()) > 1000){
+      throw 'Missing timestamp';
+    };
+
+    // Should be the results of phantomjs as a json object for each width
+    var expected = mockups.npm.require('fs').readFileSync('sometest.out');
+
+    test.widthsArray.forEach(function(width){
+      if(result.value[width] === undefined){
+        throw 'Width not found: ' + width;
+      };
+      if(JSON.stringify(result.value[width]) !== expected){
+        throw 'Does not match mockup';
+      };
+    });
+
+    if(TestCases.updateIds.length === updateCount){
+      throw 'Did not call TestCases.update';
+    };
+    var lastId = TestCases.updateIds[TestCases.updateIds.length - 1];
+    var lastFields = TestCases.updateFields[TestCases.updateIds.length -1];
+    if(lastId !== _id){
+      throw 'Did not call TestCases.update with correct _id';
+    };
+    if(lastFields.$set === undefined || !lastFields.$set.hasNormative){
+      throw 'Did not call TestCases.update with hasNormative: true';
+    };
+
+    if(TestNormatives.insertData.length === insertCount){
+      throw 'Did not call TestNormatives.insert';
+    };
+    var lastData = TestNormatives.insertData[TestNormatives.insertData.length -1];
+    if(lastData !== result){
+      throw 'Did not call TestNormatives.insert with correct data';
+    };
+
+    wait.done();
+  });
+  return wait;
 };

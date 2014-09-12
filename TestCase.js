@@ -329,7 +329,7 @@ TestCases.TestCase.prototype.setNormative = function(value, callback){
     TestNormatives.insert(insertData);
     TestCases.update(that._id, {$set: {hasNormative: true}});
     if(callback){
-      callback.call(that, error, result);
+      callback.call(that, undefined, insertData);
     };
     return id;
   }else if(Meteor.isClient){

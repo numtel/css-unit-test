@@ -1,6 +1,31 @@
 var _ = require('./lib/underscore-min');
 var _id = 'test1';
 
+// exports.test_xxx = function(TestCases, log, wait){
+//   var datas = [
+//      ...
+//   ];
+//   return multipleDatas(datas, wait, function(data){
+//     return wait.finished();
+//   });
+// };
+var multipleDatas = function(datas, wait, func){
+  var returns = 0, doReturn = function(){
+    returns++;
+    if(returns === datas.length){
+      wait.done();
+    };
+  };
+
+  wait.finished = doReturn;
+
+  datas.forEach(function(newData){
+    func.call(this, newData);
+  });
+
+  return wait;
+};
+
 exports.not_found = function(TestCases, log, wait){
   var test = new TestCases.TestCase('invalid_id');
   if(test.notFound !== true){
@@ -28,38 +53,46 @@ exports.widths_to_array = function(TestCases, log, wait){
 };
 
 exports.test_setData = function(TestCases, log, wait){
+  // setData does not validate inputs. That happens before this function,
+  // if necessary.
+
   var datas = [
-    {title: 'Cowabunga'},
-    {cssFiles: 'http://test2.com/test.css\nhttp://test3.com/sample1.css'}
+    {title: 'Cowabunga', description: 'Babaganoush'},
+    {cssFiles: 'http://test2.com/test.css\nhttp://test3.com/sample1.css'},
+    {interval: '', widths: '234,1290'},
+    {interval: '4'}
   ];
-  var returns = [], doReturn = function(val){
-    if(val === undefined){
-      val = '';
-    };
-    returns.push(val);
-    if(returns.length === datas.length){
-      if(returns.join('').length){
-        throw returns.join('\n');
-      };
-      wait.done();
-    };
-  };
-  datas.forEach(function(newData){
+
+  return multipleDatas(datas, wait, function(newData){
     var test = new TestCases.TestCase(_id);
     var mockup = TestCases.findOne(_id);
+    var updateCount = TestCases.updateFields.length;
+
+    // Special Case: Must set nextRun in order to test that it is cleared
+    if(newData.interval === ''){
+      test.nextRun = 21093129;
+    };
+
     test.setData(newData, function(error, result){
       if(error){
         throw error;
       };
       // Check that data updates
-      var failed = false;
       _.each(newData, function(val, key){
-        if(!failed && test[key] !== val){
-          failed = true;
-          doReturn('Data mismatch on "' + key + '": ' + test[key]);
-          return;
+        if(test[key] !== val){
+          throw 'Data mismatch on "' + key + '": ' + test[key];
         };
       });
+
+      // Check that widthsArray updates
+      if(newData.widths !== undefined){
+        var expectedWidthsArray = newData.widths.split(',').map(function(width){
+          return parseInt(width.trim(), 10);
+        });
+        if(_.difference(test.widthsArray, expectedWidthsArray).length > 0){
+          throw 'widthsArray did not update properly!';
+        };
+      };
 
       // Check that hasNormative updates with select fields
       var updateNormative = [
@@ -68,21 +101,184 @@ exports.test_setData = function(TestCases, log, wait){
          'testURL',
          'fixtureHTML', 
          'remoteStyles'];
-      failed = false;
       updateNormative.forEach(function(updateField){
         if(newData[updateField] !== undefined &&
             newData[updateField] !== mockup[updateField] &&
             test.hasNormative !== false){
-          failed = true;
-          doReturn('hasNormative not reset! Passed ' + _.keys(newData).join(', '));
-          return;
+          throw 'hasNormative not reset! Passed ' + _.keys(newData).join(', ');
         };
       });
+
       // Check nextRun interval
-      doReturn('TODO: Not yet completed!');
+      if(newData.interval !== undefined){
+        if(newData.interval === '' && test.nextRun !== undefined){
+          throw 'Didn\'t reset nextRun';
+        }else if(newData.interval.length && test.nextRun === undefined){
+          throw 'Didn\'t set nextRun';
+        };
+      };
+
       // Check that update is called with correct data
-      doReturn();
+      if(TestCases.updateFields.length === updateCount){
+        throw 'Didn\'t call update';
+      };
+      var lastUpdate = TestCases.updateFields[TestCases.updateFields.length-1];
+      if(lastUpdate.$set === undefined){
+        throw 'Invalid update!';
+      };
+      _.each(newData, function(val, key){
+        if(lastUpdate.$set[key] !== val){
+          throw 'Update doesn\'t match on "' + key + '": ' + val;
+        };
+      });
+
+      // All clear
+      wait.finished();
     });
   });
-  return wait;
+};
+
+
+exports.test_styleSheetsFromUrl = function(TestCases, log, wait){
+  var test = new TestCases.TestCase(_id);
+  test.stylesheetsFromUrl('http://google.com/', function(error, result){
+    if(error){
+      throw 'Loadable url should not result in error';
+    };
+    if(result.indexOf('link-tag-success') === -1){
+      throw 'Didn\'t work for loadable url';
+    };
+  });
+  test.stylesheetsFromUrl('asfdasdfm/', function(error, result){
+    if(result){
+      throw 'Error should not have result';
+    };
+    if(!error){
+      throw 'Error should have produced error';
+    };
+  });
+};
+
+exports.test_getHTML = function(TestCases, log, wait){
+  var datas = [
+    // Test with default mockup
+    {options: {},
+     expected: [
+      // Needs to have checked for remote styles succesfully, from mockup:
+      'link-tag-success',
+      '<html test-ignore>',
+      '<body test-ignore>',
+     ],
+     successful: true},
+    // Test alternate fixtureHTML
+    {options: {fixtureHTML: '<body>something you would not expect</body>'},
+     unexpected: [
+      '<body test-ignore>'
+     ],
+     successful: true},
+    {options: {fixtureHTML: '<html><body>something you would not expect</body></html>'},
+     expected: [
+      'link-tag-success',
+      'something you would not expect</body>'
+     ],
+     unexpected: [
+      '<html test-ignore>',
+      '<body test-ignore>'
+     ],
+     successful: true},
+    // Test with normative
+    {options: {
+      normativeValue: [
+          {selector: 'h1',
+           attributes: {'color': '#ff0'},
+           children: [
+            {selector: 'h1>em',
+             attributes: {'text-align': 'center'}}
+           ]}
+        ]
+      },
+     expected: [
+      'h1{color: #ff0; }',
+      'h1>em{text-align: center; }'
+     ],
+     successful: true},
+    // Test with normative + diff
+    {options: {
+      normativeValue: [
+          {selector: 'h1',
+           attributes: {'color': '#ff0'},
+           children: [
+            {selector: 'h1>em',
+             attributes: {'text-align': 'center'}}
+           ]}
+        ],
+       diff: [
+        // No children in diff, just flat
+        {selector: 'h1',
+         instances: [{key: 'color', bVal: '#000'}]}
+       ]
+      },
+     expected: [
+      'h1{color: #000; }',
+      'h1>em{text-align: center; }'
+     ],
+     successful: true}
+  ];
+  return multipleDatas(datas, wait, function(data){
+    var test = new TestCases.TestCase(_id);
+    test.getHTML(data.options, function(error, result){
+      if(data.successful && error){
+        throw error;
+      }else if(!data.successful && !error){
+        throw 'Should have produced error';
+      };
+      // Result should include fixtureHTML exactly as long as it doesn't
+      // have an html tag in it
+      var fixtureHTML = data.options.fixtureHTML || test.fixtureHTML;
+      if(fixtureHTML.indexOf('<html') === -1 && result.indexOf(fixtureHTML) === -1){
+        throw 'fixtureHTML not included';
+      };
+      // Result should have basic tags
+      ['html', 'head', 'body'].forEach(function(tag){
+        var matcher = new RegExp('\<' + tag + '[^]+\<\/' + tag + '\>', 'i');
+        if(!matcher.test(result)){
+          throw 'Missing tag: ' + tag;
+        };
+      });
+
+      if(data.options.normativeValue === undefined){
+        // CSS Files should be included
+        test.cssFiles.split('\n').forEach(function(href){
+          if(href.trim() !== '' && result.indexOf(href) === -1){
+            throw 'CSS File not included: ' + href;
+          };
+        });
+      }else{
+        // No links only style tags
+        if(/\<link .+rel=\"stylesheet\".+\>/i.test(result) ||
+            !/\<style\>[^]+\<\/style\>/i.test(result)){
+          throw 'Should have style tag and no link tag when passed normative'
+        };
+
+      };
+
+      if(data.expected && data.expected.length){
+        data.expected.forEach(function(expected){
+          if(result.indexOf(expected) === -1){
+            throw 'Missing: ' + expected;
+          };
+        });
+      };
+      if(data.unexpected && data.unexpected.length){
+        data.unexpected.forEach(function(unexpected){
+          if(result.indexOf(unexpected) !== -1){
+          log(result);
+            throw 'Should not have: ' + unexpected;
+          };
+        });
+      };
+
+      wait.finished();
+    });
+  });
 };

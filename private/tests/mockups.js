@@ -38,3 +38,45 @@ var TestCases = {
 };
 
 exports.testCases = TestCases;
+
+var phantomPath = '/path/to/phantomjs';
+var phantomPathSheetsFromUrl = 'assets/app/phantom/getSheetsFromUrl.js';
+exports.npm = {
+  require: function(packageName){
+    switch(packageName){
+      case 'phantomjs':
+        return {path: phantomPath};
+        break;
+      case 'child_process':
+        return {spawn: function(path, args){
+                          var command = {stdout: {}, stderr: {}};
+                          if(path === phantomPath &&
+                              args[0] === phantomPathSheetsFromUrl){
+                            command.on = function(type, eventFunc){
+                              if(type==='exit'){
+                                // Script should always succeed, tested elsewhere
+                                eventFunc(0);
+                              };
+                            };
+                            command.stdout.on = function(type, eventFunc){
+                              if(type==='data'){
+                                if(/http.?\:\/\/.*\//.test(args[1])){
+                                  // Give mockup result
+                                  eventFunc('link-tag-success');
+                                }else{
+                                  // Give error if not a url
+                                  eventFunc('##ERROR##');
+                                };
+                              };
+                            };
+                            command.stderr.on = function(type, eventFunc){
+                              // No Errors reported this way
+                            };
+                            return command;
+                          };
+                        }
+                };
+        break;
+    };
+  }
+};

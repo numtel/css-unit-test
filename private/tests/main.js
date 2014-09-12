@@ -10,16 +10,24 @@ var _ = require('./lib/underscore-min');
 var colors = require('./lib/colors');
 
 console.log('CSS-Unit-Test App Unit Test Suite'.bold);
-console.log('Must be run from app root directory!'.italic.inverse);
+
+// Check if running from root by context
+if(!fs.existsSync('client') || !fs.existsSync('private') ||
+    !fs.existsSync('server') || !fs.existsSync('public')) {
+  console.log('Must be run from app root directory!'.red.italic.inverse);
+  process.exit(1);
+};
+
+console.time('Run Time');
 
 var mockups = require('./mockups');
 
 // Load TestCase class
-(function(Meteor, TestCases){
+(function(Meteor, TestCases, Npm){
   // Refers to the actual source file
   var fileContents = fs.readFileSync('TestCase.js', "utf8");
   eval(fileContents);
-})(mockups.meteorServer, mockups.testCases);
+})(mockups.meteorServer, mockups.testCases, mockups.npm);
 
 var lastLog, logClosure = function(testFile, testKey){
   return function(val){
@@ -65,6 +73,8 @@ var allDone = function(){
       };
     });
   });
+
+  console.timeEnd('Run Time');
 
   // Exit with code
   if(passPercent === 100){

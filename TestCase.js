@@ -109,7 +109,7 @@ TestCases.TestCase.prototype.stylesheetsFromUrl = function(url, callback){
   if(Meteor.isServer){
     var phantomjs = Npm.require('phantomjs');
     var shell = Npm.require('child_process');
-    command = shell.spawn(phantomjs.path, 
+    var command = shell.spawn(phantomjs.path, 
       ['assets/app/phantom/getSheetsFromUrl.js', url]);
     var stdout = '', stderr = '';
 
@@ -403,7 +403,7 @@ var flattenArray = function(a){
   a = _.map(a, _.clone);
   var b = [];
   a.forEach(function(item){
-    if(item.children.length){
+    if(item.children && item.children.length){
       var recursed = flattenArray(item.children);
       b = b.concat(recursed);
     };
@@ -527,11 +527,11 @@ TestCases.TestCase.prototype.run = function(options, callback){
       if(that.interval){
         metaAttr.nextRun = metaAttr.lastRun + (parseInt(that.interval, 10) * 1000 * 60);
       };
-      TestCases.update(that._id, {$set: metaAttr});
-
-      if(callback){
-        callback.call(that, undefined, report);
-      };
+      that.setData(metaAttr, function(error, result){
+        if(callback){
+          callback.call(that, error, report);
+        };
+      });
     }));
   }else if(Meteor.isClient){
     Meteor.call('run', {id: this._id, options: options}, function(error, result){

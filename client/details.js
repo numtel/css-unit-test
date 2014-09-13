@@ -15,6 +15,10 @@ Template.details.historyItems = function(){
         });
 };
 
+Template.details.hasHistoryItems = function(){
+  return Template.details.historyItems.call(this).count() > 0;
+};
+
 Template.details.testVar = function(data){
   var fieldName = data['hash']['field'],
       test = Template.details.test();

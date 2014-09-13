@@ -1,12 +1,14 @@
 <template name="details">
-  <div class="col-md-9 test-details">
-    {{#if loading}}
-      <div class="page-loading"></div>
-    {{else}}
-      {{#if createTestDialogOpen}}
+  {{#if loading}}
+    <div class="page-loading"></div>
+  {{else}}
+    {{#if createTestDialogOpen}}
+      <div class="col-md-9 test-details">
         {{> modifyDialog}}
-      {{else}}
-        {{#if test}}
+      </div>
+    {{else}}
+      {{#if test}}
+        <div class="col-md-9 test-details">
           {{#with test}}
             <div class="test-actions btn-group pull-right">
               {{#if hasNormative}}
@@ -71,7 +73,7 @@
               {{fillFrame}}
             </div>
             <div id="test-history-{{_id}}" class="test-history test-panel active">
-              {{#if historyItems}}
+              {{#if hasHistoryItems}}
               <ul>
                 {{#each historyItems}}
                   <li data-id="{{_id}}" class="{{#if expanded}}expanded{{/if}}">
@@ -106,10 +108,10 @@
               {{/if}}
             </div>
           {{/with}}
-        {{/if}}
+        </div>
       {{/if}}
     {{/if}}
-  </div>
+  {{/if}}
 </template>
 
 <template name="historyDetails">

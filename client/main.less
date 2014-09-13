@@ -8,17 +8,24 @@
 }
 
 body {
-  background:#666;
+  font-family: Ubuntu, "Helvetica Neue",Helvetica,Arial,sans-serif;
+  border-top:3px solid #67ABE6;
+  background:#fff;
 }
 
 h2 {
   margin-top:0;
 }
 
-#login-dropdown-list .btn-GitHub {
-  color:#333;
-  background-color:#fff;
-  border-color:#ccc;
+#login-dropdown-list {
+  .btn-GitHub, .btn-Google {
+    color:#666;
+    background-color:#fff;
+    border-color:#ccc;
+    &:hover {
+      color:#333;
+    }
+  }
 }
 
 
@@ -28,22 +35,12 @@ h2 {
 }
 
 .logged-in-header {
-  background:#67ABE6;
-  .brand,
-  .dropdown-toggle {
-    color: #fff;
-    &:hover {
-      text-decoration:underline;
-    }
-  }
   .brand {
     float:left;
+    color:#428bca;
   }
   .nav {
     float:right;
-  }
-  .nav>li.dropdown>a {
-    background:none;
   }
 }
 
@@ -64,10 +61,10 @@ h2 {
   .topnav {
     margin-bottom: 20px;
     padding: 0;
-    border-bottom: 1px solid #D4E8FA;
   }
   .brand {
-    margin: 0;
+    margin: 0 15px;
+    border-bottom: 1px solid #D4E8FA;
   }
   .attention {
     padding: 40px;
@@ -95,7 +92,7 @@ h2 {
   }
 }
 .welcome-content {
-  background:#fff;
+  background: url(drop-shadow-1.png) repeat-x top center;
   color:#666;
   h2 {
     text-align:center;
@@ -109,6 +106,7 @@ h2 {
     .glyphicon {
       display:block;
       font-size:72px;
+      text-shadow:0 2px 3px #ddd;
       color:#428bca;
     }
     h3 {
@@ -122,15 +120,16 @@ h2 {
 }
 
 .content {
-  background: #fff;
+  background: url(drop-shadow.png) no-repeat top center;
   padding: 20px 0 40px;
 }
 
 .footer {
+  background: url(drop-shadow.png) no-repeat top center;
   padding:60px 20px;
-  color:#ccc;
+  color:#999;
   a {
-    color:#eee;
+    color:#555;
   }
   li {
     float:left;
@@ -228,6 +227,9 @@ iframe {
       list-style:none;
       clear:both;
       border-bottom: 1px solid #eee;
+      &:last-child {
+        border-bottom: 0;
+      }
       .statusbar{
         padding: 6px 8px;
         position:relative;
@@ -242,7 +244,7 @@ iframe {
       }
       &.expanded {
         .statusbar {
-          .gradient(#f5f5f5, #ffffff);  
+          background:url(drop-shadow-1.png) repeat-x top center;  
         }
         .details {
           display:block;
@@ -390,7 +392,7 @@ iframe {
 @media only screen and (max-width:991px){
   .test-details {
     margin-top:20px;
-    border-top: 1px solid #ccc;
+    border-top: 1px solid #ddd;
     padding-top: 20px;
   }
 }

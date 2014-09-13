@@ -6,8 +6,8 @@
 var tests = ['TestCase'];
 
 var fs = require('fs');
-var _ = require('./lib/underscore-min');
-var colors = require('./lib/colors');
+var _ = require('./node_modules/underscore-min');
+var colors = require('./node_modules/colors');
 
 console.log('CSS-Unit-Test App Unit Test Suite'.bold);
 

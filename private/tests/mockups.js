@@ -145,7 +145,7 @@ exports.npm = {
         };
         break;
       case 'fibers/future': 
-        return require('./lib/fibers/future');
+        return require('./node_modules/fibers/future');
         break;
     };
   }

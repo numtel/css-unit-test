@@ -1,4 +1,4 @@
-var _ = require('./lib/underscore-min');
+var _ = require('./node_modules/underscore-min');
 var mockups = require('./mockups');
 var _id = 'test1';
 

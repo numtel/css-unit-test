@@ -25,6 +25,7 @@ var mockups = require('./mockups');
 (function(Meteor, 
           TestCases, 
           TestNormatives, 
+          TestHistory,
           Npm, 
           Random){
   // Refers to the actual source file
@@ -33,6 +34,7 @@ var mockups = require('./mockups');
 })(mockups.meteorServer, 
    mockups.testCases, 
    mockups.testNormatives,
+   mockups.testHistory,
    mockups.npm, 
    mockups.random);
 
@@ -115,7 +117,8 @@ tests.forEach(function(testFile){
       retval = test(logClosure(testFile, testKey), 
                     wait, 
                     mockups.testCases, 
-                    mockups.testNormatives);
+                    mockups.testNormatives,
+                    mockups.testHistory);
     }catch(error){
       status = error;
     };

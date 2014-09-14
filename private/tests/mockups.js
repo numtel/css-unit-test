@@ -42,15 +42,34 @@ var TestCases = {
 exports.testCases = TestCases;
 
 var TestNormatives = {
+  sample: {"_id":"random-psAAby4PsP","testCase":"test1","owner":"mr.big","timestamp":1410731849667,"value":{"720":[{"ignore":true,"selector":"HTML","attributes":{"background-color":"#eee"},"rules":[],"children":[]},{"ignore":false,"selector":"BODY>H1","attributes":{"color":"#f00"},"rules":[],"children":[{"ignore":false,"selector":"BODY>H1>EM","attributes":{"font-style":"italic"},"rules":[],"children":[]}]}],"1024":[{"ignore":true,"selector":"HTML","attributes":{"background-color":"#eee"},"rules":[],"children":[]},{"ignore":false,"selector":"BODY>H1","attributes":{"color":"#f00"},"rules":[],"children":[{"ignore":false,"selector":"BODY>H1>EM","attributes":{"font-style":"italic"},"rules":[],"children":[]}]}]}},
   insertData: [],
   insert: function(data, callback){
     TestNormatives.insertData.push(data);
     if(callback){
       callback.call()
     };
+  },
+  find: function(query, options){
+    return {
+      fetch: function(){
+        return [TestNormatives.sample];
+      }
+    };
   }
 };
 exports.testNormatives = TestNormatives;
+
+var TestHistory = {
+  insertData: [],
+  insert: function(data, callback){
+    TestHistory.insertData.push(data);
+    if(callback){
+      callback.call()
+    };
+  }
+};
+exports.testHistory = TestHistory;
 
 var phantomPath = '/path/to/phantomjs';
 var phantomPathSheetsFromUrl = 'assets/app/phantom/getSheetsFromUrl.js';
@@ -123,12 +142,12 @@ exports.npm = {
                  attributes: {'background-color': '#eee'},
                  rules: [],
                  children: []},
-                {ignore: true,
+                {ignore: false,
                  selector: 'BODY>H1',
                  attributes: {'color': '#f00'},
                  rules: [],
                  children: [
-                    {ignore: true,
+                    {ignore: false,
                      selector: 'BODY>H1>EM',
                      attributes: {'font-style': 'italic'},
                      rules: [],

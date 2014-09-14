@@ -42,11 +42,7 @@ TestCases.TestCase.prototype.setData = function(data, callback){
   var that = this;
   if(Meteor.isServer){
     // Require new normative if these fields change
-    ['cssFiles', 
-     'widths', 
-     'testURL',
-     'fixtureHTML', 
-     'remoteStyles'].forEach(function(field){
+    ['widths'].forEach(function(field){
       if(data[field] !== undefined && data[field] !== that[field]){
         data.hasNormative = false;
       };

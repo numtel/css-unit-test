@@ -96,12 +96,7 @@ exports.test_setData = function(log, wait, TestCases){
       };
 
       // Check that hasNormative updates with select fields
-      var updateNormative = [
-         'cssFiles', 
-         'widths', 
-         'testURL',
-         'fixtureHTML', 
-         'remoteStyles'];
+      var updateNormative = ['widths'];
       updateNormative.forEach(function(updateField){
         if(newData[updateField] !== undefined &&
             newData[updateField] !== mockup[updateField] &&
@@ -368,4 +363,102 @@ exports.test_setNormative = function(log, wait, TestCases, TestNormatives){
     wait.done();
   });
   return wait;
+};
+
+exports.test_run = function(log, wait, TestCases, TestNormatives, TestHistory){
+  var datas = [
+    {},
+    {setOnTest: {hasNormative: true},
+     shouldPass: true
+    },
+    {setOnTest: {hasNormative: true},
+     shouldPass: false,
+     setNormative: {"_id":"random-psAAby4PsP","testCase":"test1","owner":"mr.big","timestamp":1410731849667,"value":{"720":[{"ignore":true,"selector":"HTML","attributes":{"background-color":"#eee"},"rules":[],"children":[]},{"ignore":false,"selector":"BODY>H1","attributes":{"color":"#f50"},"rules":[],"children":[{"ignore":false,"selector":"BODY>H1>EM","attributes":{"font-style":"italic"},"rules":[],"children":[]}]}],"1024":[{"ignore":true,"selector":"HTML","attributes":{"background-color":"#eee"},"rules":[],"children":[]},{"ignore":false,"selector":"BODY>H1","attributes":{"color":"#f00"},"rules":[],"children":[{"ignore":false,"selector":"BODY>H1>EM","attributes":{"font-style":"italic"},"rules":[],"children":[]}]}]}},
+     failures: {
+       "720": [ { selector: 'BODY>H1',
+         key: 'color',
+         aVal: '#f50',
+         bVal: '#f00',
+         aRules: [],
+         bRules: [] } ], 
+       "1024": []}
+    }
+  ];
+  return multipleDatas(datas, wait, function(data){
+    var test = new TestCases.TestCase(_id);
+    if(data.setOnTest){
+      _.extend(test, data.setOnTest);
+    };
+    var backupNormative;
+    if(data.setNormative){
+      backupNormative = TestNormatives.sample;
+      TestNormatives.sample = data.setNormative;
+    };
+    test.run(function(error, result){
+      if(data.setNormative){
+        TestNormatives.sample = backupNormative;
+      };
+      if(!test.hasNormative){
+        if(!error){
+          throw 'Should have thrown \'No normative exists!\'';
+        }else{
+          return wait.finished();
+        };
+      };
+      // Check fields exist
+      if(!result.time instanceof Date){
+        throw 'Test result Time not set properly';
+      };
+      if(result._id.substr(0,7) !== 'random-'){
+        throw 'Test result ID not set properly';
+      };
+      if(result.normative.substr(0,7) !== 'random-'){
+        throw 'Test result normative Id not set properly';
+      };
+      if(result.fixtureHTML !== test.fixtureHTML){
+        throw 'Test result fixtureHTML not set properly';
+      };
+      if(result.owner !== test.owner){
+        throw 'Test result owner not set properly';
+      };
+      if(result.testCase !== test._id){
+        throw 'Test result testCase id not set properly';
+      };
+      if(data.shouldPass && !result.passed){
+        throw 'Test should have passed!';
+      };
+      var resultWidthsCount = 0;
+      _.each(result.failures, function(viewportFailures, width){
+        resultWidthsCount++;
+        if(test.widthsArray.indexOf(parseInt(width,10)) === -1){
+          throw 'Width does not match test: ' + width;
+        };
+        if(result.passed && viewportFailures.length){
+          throw 'Passed test should not have failures';
+        };
+        if(data.failures){
+          _.each(data.failures, function(expFailures, width){
+            if(result.failures[width].length !== expFailures.length){
+              throw 'Failures have different length';
+            };
+            expFailures.forEach(function(failure, i){
+              _.each(failure, function(val, key){
+                if(val instanceof Array){
+                  return; // Do not test aRules, bRules
+                };
+                if(val !== result.failures[width][i][key]){
+                  throw 'Failure value mismatch on "' + key + '": ' + val;
+                };
+              });
+            });
+          });
+        };
+      });
+      if(resultWidthsCount !== test.widthsArray.length){
+        throw 'Result widths does not match test widths';
+      };
+
+      wait.finished();
+    });
+  });
 };

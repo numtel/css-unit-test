@@ -30,7 +30,8 @@ Template.modifyDialog.fields = function(){
      label: 'Test Resolution Width',
      text: true,
      default: '1024',
-     help: 'Please specify a comma separated list of pixel window widths to test.'},
+     help: 'Please specify a comma separated list of pixel window widths to test.' +
+           '<br>A new normative will be required if this field changes.'},
     {key: 'fixtureHTML',
      label: 'Fixture HTML',
      textarea: true,

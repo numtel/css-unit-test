@@ -61,13 +61,13 @@ TestCases.TestCase.prototype.setData = function(data, callback){
     TestCases.update(this._id, {$set: data}, {}, function(error, result){
       extendData(that, data);
       if(callback){
-        callback.call(this, error, result);
+        callback.call(this, error, data);
       };
     });
   }else if(Meteor.isClient){
     Meteor.call('setData', {id: this._id, data: data}, function(error, result){
-      if(error){
-        console.log('setData Failed!', error, result);
+      if(error === undefined){
+        extendData(that, result);
       };
       if(callback){
         callback.call(that, error, result);
@@ -225,7 +225,7 @@ TestCases.TestCase.prototype.extractStyles = function(callback){
     this.getHTML({}, function(error, result){
       fs.writeFile(htmlFile, result, function(err) {
         if(err){
-          console.log(err);
+          throw new Meteor.Error(500, 'Error writing HTML file');
         }else{
           var returned = {}, returnCount = 0;
           var phantomReturn = function(width, styles){
@@ -250,7 +250,6 @@ TestCases.TestCase.prototype.extractStyles = function(callback){
 
             ['stdout', 'stderr'].forEach(function(outVar){
               command[outVar].on('data', function(data){
-                console.log('PhantomJS ' + outVar + ': ' + data);
                 cmdOutput += data;
                 commands.forEach(function(cmd){
                   cmd.kill('SIGKILL');
@@ -330,7 +329,7 @@ TestCases.TestCase.prototype.setNormative = function(value, callback){
     return id;
   }else if(Meteor.isClient){
     Meteor.call('setNormative', {id: this._id, value: value}, function(error, result){
-      if(typeof result === 'string' && result.substr(0,9) === '##error##'){
+      if(typeof result === 'string' && result.substr(0,9) === '##ERROR##'){
         if(callback){
           callback.call(that, result.substr(9), undefined);
         };
@@ -369,9 +368,6 @@ if(Meteor.isServer){
     TestCases.TestCase.prototype[func] = function(callback){
       var that = this;
       Meteor.call(func, {id: this._id}, function(error, result){
-        if(error){
-          console.log(func + ' Failed!', error, result);
-        };
         if(callback){
           callback.call(that, error, result);
         };
@@ -383,9 +379,6 @@ if(Meteor.isServer){
     TestCases.TestCase.prototype[func] = function(options, callback){
       var that = this;
       Meteor.call(func, {id: this._id, options: options}, function(error, result){
-        if(error){
-          console.log(func + ' Failed!', error, result);
-        };
         if(callback){
           callback.call(that, error, result);
         };
@@ -512,7 +505,7 @@ TestCases.TestCase.prototype.run = function(options, callback){
                     failures: failures};
       TestHistory.insert(report, function(error, result){
         if(error){
-          console.log('TestHistory Insertion Error', error);
+          throw error;
         };
       });
 

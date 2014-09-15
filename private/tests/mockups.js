@@ -1,13 +1,66 @@
 
-exports.meteorServer = {
+var Meteor = exports.Meteor = {
   isServer: true,
   isClient: false,
+  userId: 'mr.big',
   bindEnvironment: function(func){
     return func;
   },
+  call: function(key, options, callback){
+    var result;
+    // At the start of each client test, Meteor is set to client
+    Meteor.isServer = true;
+    Meteor.isClient = false;
+    try{
+      result = Meteor._methodsCache[key].call(Meteor, options);
+    }catch(error){
+      if(callback){
+        callback(error, undefined);
+        callback = undefined;
+      };
+    };
+    // Success
+    if(callback){
+      callback(undefined, result);
+    };
+  },
+  Collection: function(key){
+    var collection = collections[key];
+    for(var i in collection){
+      if(collection.hasOwnProperty(i)){
+        this[i] = collection[i];
+      };
+    };
+    collections[key] = this;
+    exports[key] = this;
+    if(this.allow === undefined){
+      this.allow = function(options){};
+    };
+    if(this.find === undefined){
+      this.find = function(options){};
+    };
+  },
+  publish: function(key, func){
+  },
+  startup: function(func){
+  },
+  _methodsCache: {},
+  methods: function(options){
+    for(var i in options){
+      if(options.hasOwnProperty(i)){
+        Meteor._methodsCache[i] = options[i];
+      };
+    };
+  },
+  Error: function(code, msg){
+    throw code + ': ' + msg;
+  }
+
 };
 
-var TestCases = {
+var collections = {};
+
+exports.TestCases = {
   findOne: function(id){
     if(id==='test1'){
       return {
@@ -29,23 +82,22 @@ var TestCases = {
   updateOptions: [],
   updateIds: [],
   update: function(id, fields, options, callback){
-    TestCases.updateIds.push(id);
-    TestCases.updateFields.push(fields);
-    TestCases.updateOptions.push(options);
+    exports.TestCases.updateIds.push(id);
+    exports.TestCases.updateFields.push(fields);
+    exports.TestCases.updateOptions.push(options);
     if(callback){
       var error, result = 'inserted_id';
       callback(error, result);
     };
   }
 };
+collections.TestCases = exports.TestCases;
 
-exports.testCases = TestCases;
-
-var TestNormatives = {
+exports.TestNormatives = {
   sample: {"_id":"random-psAAby4PsP","testCase":"test1","owner":"mr.big","timestamp":1410731849667,"value":{"720":[{"ignore":true,"selector":"HTML","attributes":{"background-color":"#eee"},"rules":[],"children":[]},{"ignore":false,"selector":"BODY>H1","attributes":{"color":"#f00"},"rules":[],"children":[{"ignore":false,"selector":"BODY>H1>EM","attributes":{"font-style":"italic"},"rules":[],"children":[]}]}],"1024":[{"ignore":true,"selector":"HTML","attributes":{"background-color":"#eee"},"rules":[],"children":[]},{"ignore":false,"selector":"BODY>H1","attributes":{"color":"#f00"},"rules":[],"children":[{"ignore":false,"selector":"BODY>H1>EM","attributes":{"font-style":"italic"},"rules":[],"children":[]}]}]}},
   insertData: [],
   insert: function(data, callback){
-    TestNormatives.insertData.push(data);
+    exports.TestNormatives.insertData.push(data);
     if(callback){
       callback.call()
     };
@@ -53,28 +105,28 @@ var TestNormatives = {
   find: function(query, options){
     return {
       fetch: function(){
-        return [TestNormatives.sample];
+        return [exports.TestNormatives.sample];
       }
     };
   }
 };
-exports.testNormatives = TestNormatives;
+collections.TestNormatives = exports.TestNormatives;
 
-var TestHistory = {
+exports.TestHistory = {
   insertData: [],
   insert: function(data, callback){
-    TestHistory.insertData.push(data);
+    exports.TestHistory.insertData.push(data);
     if(callback){
       callback.call()
     };
   }
 };
-exports.testHistory = TestHistory;
+collections.TestHistory = exports.TestHistory;
 
 var phantomPath = '/path/to/phantomjs';
 var phantomPathSheetsFromUrl = 'assets/app/phantom/getSheetsFromUrl.js';
 var phantomPathExtractStyles = 'assets/app/phantom/extractStyles.js';
-exports.npm = {
+exports.Npm = {
   require: function(packageName){
     switch(packageName){
       case 'phantomjs':
@@ -170,7 +222,7 @@ exports.npm = {
   }
 };
 
-exports.random = {
+exports.Random = {
   id: function(){
     var length = 10, 
         text = "",

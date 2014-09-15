@@ -133,8 +133,9 @@ Meteor.methods({
   createTest: function (options) {
     validatePost(options, true);
 
-    if (! this.userId)
+    if(!this.userId){
       throw new Meteor.Error(403, "You must be logged in");
+    };
 
     var id = options._id || Random.id();
     var doc = {
@@ -157,8 +158,9 @@ Meteor.methods({
 
     var current = new TestCases.TestCase(options._id);
 
-    if (current.notFound)
+    if(current.notFound){
       throw new Meteor.Error(403, "Invalid test case");
+    }
 
     var doc = {};
     _.each(fieldDefs, function(def, key){
@@ -171,9 +173,6 @@ Meteor.methods({
     });
 
     return options._id;
-  },
-  getHistory: function(options){
-    return loadTest(options.id).history;
   },
   setData: function(options){
     var fut = new Future();
@@ -208,7 +207,15 @@ Meteor.methods({
     return fut.wait();
   },
   setNormative: function(options){
-    return loadTest(options.id).setNormative(options.value);
+    var fut = new Future();
+    loadTest(options.id).setNormative(options.value, function(error, result){
+      if(error){
+        fut['return']('##ERROR##' + error);
+      }else{
+        fut['return'](result);
+      };
+    });
+    return fut.wait();
   },
   loadLatestNormative: function(options){
     return loadTest(options.id).loadLatestNormative();

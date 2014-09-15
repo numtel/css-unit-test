@@ -23,20 +23,18 @@ var mockups = require('./mockups');
 
 // Load TestCase class in its expected context
 (function(Meteor, 
-          TestCases, 
-          TestNormatives, 
-          TestHistory,
           Npm, 
           Random){
   // Refers to the actual source file
-  var fileContents = fs.readFileSync('TestCase.js', "utf8");
-  eval(fileContents);
-})(mockups.meteorServer, 
-   mockups.testCases, 
-   mockups.testNormatives,
-   mockups.testHistory,
-   mockups.npm, 
-   mockups.random);
+  var wrappedSrc = function(filename){
+    var src = fs.readFileSync(filename, 'utf8');
+    return '(function(){' + src + '})();';
+  };
+  eval(wrappedSrc('server/TestCases.js'));
+  eval(wrappedSrc('TestCase.js'));
+})(mockups.Meteor, 
+   mockups.Npm, 
+   mockups.Random);
 
 var lastLog, logClosure = function(testFile, testKey){
   return function(val){
@@ -57,6 +55,7 @@ tests.forEach(function(testFile){
     testCount++;
   });
 });
+testCount*=2;
 
 var testStatus = {}, testComplete = 0, testFailures = 0;
 
@@ -99,31 +98,34 @@ tests.forEach(function(testFile){
 
   testStatus[testFile] = {};
 
-  _.each(available, function(test, testKey){
-    var status;
-    var wait = {
-      done: function(){
-        var passed = status === undefined;
-        testComplete++;
-        testFailures += passed ? 0 : 1;
-        testStatus[testFile][testKey] = passed ? true : status;
-        if(testComplete === testCount){
-          allDone();
-        };
-      }
-    };
-    var retval;
-    try{
-      retval = test(logClosure(testFile, testKey), 
-                    wait, 
-                    mockups.testCases, 
-                    mockups.testNormatives,
-                    mockups.testHistory);
-    }catch(error){
-      status = error;
-    };
-    if(retval !== wait){
-      wait.done();
-    };
-  });
+  for(var asClient=0; asClient < 2; asClient++){
+    _.each(available, function(test, testKey){
+      var status;
+      var wait = {
+        done: function(){
+          var passed = status === undefined;
+          testComplete++;
+          testFailures += passed ? 0 : 1;
+          testStatus[testFile][testKey + (asClient ? '-client' : '')] = 
+            passed ? true : status;
+          if(testComplete === testCount){
+            allDone();
+          };
+        }
+      };
+      if(asClient){
+        mockups.Meteor.isServer = false;
+        mockups.Meteor.isClient = true;
+      };
+      var retval;
+      try{
+        retval = test(logClosure(testFile, testKey), wait, mockups);
+      }catch(error){
+        status = error;
+      };
+      if(retval !== wait){
+        wait.done();
+      };
+    });
+  };
 });

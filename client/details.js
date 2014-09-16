@@ -82,10 +82,11 @@ Template.details.events({
   },
   'click button.extract': function(e){
     var test = this,
-        $el = $(e.currentTarget);
-    $el.parent().addClass('loading').find('button').addClass('disabled');
+        $el = $(e.currentTarget),
+        $parent = $el.parent();
+    $parent.addClass('loading').find('button').addClass('disabled');
     this.setNormative(function(error, result){
-      $el.parent().removeClass('loading').find('button').removeClass('disabled');
+      $parent.removeClass('loading').find('button').removeClass('disabled');
       Session.set('run-error-' + test._id, error);
     });
   },

@@ -42,6 +42,16 @@ Template.modifyDialog.fields = function(){
   ];
 };
 
+Template.modifyDialog.testSelected = function(){
+  var curVal = Session.get('selected');
+  if(!curVal){
+    // Small screens need to be able to go back to the dashboard to get to
+    // the create test button
+    curVal = Session.get('lastSelected');
+  };
+  return curVal;
+};
+
 Template.modifyDialog.isCreate = function(){
   return Session.get("modifyDialogType") ===  'create';
 };
@@ -64,7 +74,11 @@ Template.modifyDialog.fieldValue = function(){
 
 Template.modifyDialog.test =
 Template.deleteDialog.test = function(){
-  var test = new TestCases.TestCase(Session.get("selected"));
+  var curTestId = Template.modifyDialog.testSelected();
+  if(!curTestId){
+    return;
+  };
+  var test = new TestCases.TestCase(curTestId);
   if(test.notFound){
     return;
   };

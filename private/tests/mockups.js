@@ -126,6 +126,7 @@ collections.TestHistory = exports.TestHistory;
 var phantomPath = '/path/to/phantomjs';
 var phantomPathSheetsFromUrl = 'assets/app/phantom/getSheetsFromUrl.js';
 var phantomPathExtractStyles = 'assets/app/phantom/extractStyles.js';
+var phantomPathRender = 'assets/app/phantom/render.js';
 exports.Npm = {
   require: function(packageName){
     switch(packageName){
@@ -170,6 +171,27 @@ exports.Npm = {
                 };
               };
               command.stdout.on =
+              command.stderr.on = function(type, eventFunc){
+                // No Errors reported this way
+              };
+              return command;
+              break;
+            case phantomPathRender:
+              command.on = function(type, eventFunc){
+                if(type==='exit'){
+                  // Script should always succeed, tested elsewhere
+                  eventFunc(1);
+                };
+              };
+              command.stdout.on = function(type, eventFunc){
+                if(type==='data'){
+                  eventFunc('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA' +
+                    'AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO' +
+                    '9TXL0Y4OHwAAAABJRU5ErkJggg==');
+                };
+              };
+              command.kill = function(type){
+              };
               command.stderr.on = function(type, eventFunc){
                 // No Errors reported this way
               };

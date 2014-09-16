@@ -1,51 +1,100 @@
 <template name="list">
   {{#if loading}}
   {{else}}
-    <div class="col-md-3">
-      <ul class="nav nav-pills nav-stacked">
-        <li class="{{#if createTestDialogOpen}}active{{/if}}">
-          <a href="#" class="create">
-            <span class="badge badge-info pull-right">
-              <i class="glyphicon glyphicon-plus"></i>
-            </span>
+    <div id="main-list" class="{{#if dashboard}}dashboard col-md-12{{else}}col-md-3{{/if}}">
+      {{#if dashboard}}
+        {{#if createTestDialogOpen}}
+        {{else}}
+          <a href="#" class="pull-right btn btn-primary create">
             Create New Test
           </a>
-        </li>
-        {{#if empty}}
-          <li class="disabled nav-header">
-            <a>No Test Cases</a>
-          </li>
-        {{else}}
-          <li class="disabled nav-header">
-            <a>Test Cases:</a>
-          </li>
+          {{#if empty}}
+          {{else}}
+            <div class="btn-group dashboard-filter" data-toggle="buttons">
+              <button type="button" 
+                      class="btn btn-default passing {{passingActiveClass}}">
+                Passing
+              </button>
+              <button type="button" 
+                      class="btn btn-default failing {{failingActiveClass}}">
+                Failing
+              </button>
+              <button type="button" 
+                      class="btn btn-default needsAttention {{needsAttentionActiveClass}}">
+                Needs Attention
+              </button>
+            </div>
+          {{/if}}
         {{/if}}
-      </ul>
-      <ul class="nav nav-pills nav-stacked" id="tests-list">
-        {{#each tests}}
-          <li class="{{active}}">
-            <a class="test" href="{{_id}}" data-id="{{_id}}">
-              {{#if hasNormative}}
-                {{#if lastPassed}}
-                  <span class="badge alert-success pull-right">
-                    <i class="glyphicon glyphicon-ok-circle"></i>
-                  </span>
-                {{else}}
-                  <span class="badge alert-warning pull-right">
-                    <i class="glyphicon glyphicon-fire"></i>
-                  </span>
-                {{/if}}
-              {{else}}
-                <span class="badge pull-right">
-                  <i class="glyphicon glyphicon-wrench"></i>
-                </span>
-              {{/if}}
-              {{title}}
+      {{else}}
+        <ul class="nav nav-pills nav-stacked">
+          <li class="{{#if createTestDialogOpen}}active{{/if}}">
+            <a href="#" class="create">
+              <span class="badge badge-info pull-right">
+                <i class="glyphicon glyphicon-plus"></i>
+              </span>
+              Create New Test
             </a>
           </li>
-        {{/each}}
-      </ul>
-      {{renderSortable}}
+          {{#if empty}}
+            <li class="disabled nav-header">
+              <a>No Test Cases</a>
+            </li>
+          {{else}}
+            <li class="disabled nav-header">
+              <a>Test Cases:</a>
+            </li>
+          {{/if}}
+        </ul>
+      {{/if}}
+      {{#if hideTests}}
+      {{else}}
+        {{#if empty}}
+          <h1>Welcome,</h1>
+          <p>
+            This is your dashboard.<br>
+            If you had tests, you would see their thumbnails here.<br>
+            Please click on the button to the right to create your first test.
+          </p>
+          <p>For more information about configuring a test, please 
+            <a href="https://github.com/numtel/css-unit-test/wiki/Creating-a-Test-Case">
+              refer to the wiki</a>
+            .
+          </p>
+        {{else}}
+          <ul class="nav nav-pills nav-stacked" id="tests-list">
+            {{#each tests}}
+              {{#if showTest}}
+                <li class="{{active}}">
+                  <a class="test" href="{{_id}}" data-id="{{_id}}" title="{{title}}">
+                    {{#if hasNormative}}
+                      {{#if lastPassed}}
+                        <span class="badge alert-success pull-right">
+                          <i class="glyphicon glyphicon-ok-circle"></i>
+                        </span>
+                      {{else}}
+                        <span class="badge alert-warning pull-right">
+                          <i class="glyphicon glyphicon-fire"></i>
+                        </span>
+                      {{/if}}
+                    {{else}}
+                      <span class="badge pull-right">
+                        <i class="glyphicon glyphicon-wrench"></i>
+                      </span>
+                    {{/if}}
+                    <span class="title">{{title}}</span>
+                    {{#if dashboard}}
+                      <div class="thumbnail"></div>
+                    {{/if}}
+                  </a>
+                </li>
+                {{renderThumbs}}
+              {{/if}}
+            {{/each}}
+          </ul>
+          {{renderSortable}}
+        {{/if}}
+      {{/if}}
     </div>
   {{/if}}
 </template>

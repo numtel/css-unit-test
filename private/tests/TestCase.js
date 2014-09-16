@@ -285,6 +285,29 @@ exports.test_getHTML = function(log, wait, mockups){
 };
 
 
+exports.test_getThumbnail = function(log, wait, mockups, asClient){
+  var test = new mockups.TestCases.TestCase(_id);
+  test.getThumbnail(function(error, result){
+    if(error){
+      if(typeof error === 'string'){
+        error = new Error(error);
+      };
+      throw error;
+    };
+
+    if(result.substr(0, 10) !== 'data:image'){
+      throw new Error('Did not return data uri');
+    };
+
+    if(!asClient && test.thumbnail === undefined){
+      throw new Error('Did not set TestCase.thumbnail');
+    };
+
+    wait.done();
+  });
+  return wait;
+};
+
 
 exports.test_extractStyles = function(log, wait, mockups){
   var test = new mockups.TestCases.TestCase(_id);
@@ -312,7 +335,7 @@ exports.test_extractStyles = function(log, wait, mockups){
   return wait;
 };
 
-exports.test_setNormative = function(log, wait, mockups){
+exports.test_setNormative = function(log, wait, mockups, asClient){
   var test = new mockups.TestCases.TestCase(_id);
   var updateCount = mockups.TestCases.updateIds.length;
   var insertCount = mockups.TestNormatives.insertData.length;
@@ -356,10 +379,12 @@ exports.test_setNormative = function(log, wait, mockups){
     };
     var lastId = mockups.TestCases.updateIds[mockups.TestCases.updateIds.length - 1];
     var lastFields = mockups.TestCases.updateFields[mockups.TestCases.updateIds.length -1];
-    if(lastId !== _id){
+    var secondLastId = mockups.TestCases.updateIds[mockups.TestCases.updateIds.length - 2];
+    var secondLastFields = mockups.TestCases.updateFields[mockups.TestCases.updateIds.length -2];
+    if(secondLastId !== _id || lastId !== _id){
       throw new Error('Did not call TestCases.update with correct _id');
     };
-    if(lastFields.$set === undefined || !lastFields.$set.hasNormative){
+    if(secondLastFields.$set === undefined || !secondLastFields.$set.hasNormative){
       throw new Error('Did not call TestCases.update with hasNormative: true');
     };
 
@@ -369,6 +394,14 @@ exports.test_setNormative = function(log, wait, mockups){
     var lastData = mockups.TestNormatives.insertData[mockups.TestNormatives.insertData.length -1];
     if(lastData !== result){
       throw new Error('Did not call TestNormatives.insert with correct data');
+    };
+
+    if(test.hasNormative !== true){
+      throw new Error('TestCase.hasNormative not set');
+    };
+
+    if(!asClient && test.thumbnail === undefined){
+      throw new Error('thumbnail not set');
     };
 
     wait.done();

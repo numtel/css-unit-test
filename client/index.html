@@ -26,7 +26,7 @@
 <template name="controls">
   <div class="logged-in-header">
     <div class="container">
-      <a class="brand" href="/">SteezTest.me</a>
+      <a class="brand {{#if dashboard}}dashboard{{/if}}" href="/">SteezTest.me</a>
       <ul class="nav pull-right">
         {{> loginButtons align="right"}}
       </ul>

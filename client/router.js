@@ -2,17 +2,18 @@
 
 var AppRouter = Backbone.Router.extend({
   routes: {
-    ":TestId": "main"
+    ":TestId": "details",
+    "": "dashboard"
   },
-  main: function (testId) {
+  dashboard: function(){
+    Session.set("selected", null);
+  },
+  details: function (testId) {
     var oldTest = Session.get("selected");
     if (oldTest !== testId) {
       Session.set("selected", testId);
     }
   },
-  setTest: function (testId) {
-    this.navigate(testId, true);
-  }
 });
 
 Router = new AppRouter;

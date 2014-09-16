@@ -1,7 +1,7 @@
 #!/usr/bin/env nodejs
 
 // Specify files which contain tests for TestCase
-// e.g.: exports.testKey = function(TestCases, console.log, wait)
+// e.g.: exports.testKey = function(TestCases, console.log, wait, asClient)
 // For async, return wait; then in callback: wait.done();
 var tests = ['TestCase'];
 
@@ -119,7 +119,7 @@ tests.forEach(function(testFile){
       };
       var retval;
       try{
-        retval = test(logClosure(testFile, testKey), wait, mockups);
+        retval = test(logClosure(testFile, testKey), wait, mockups, asClient);
       }catch(error){
         status = error;
       };

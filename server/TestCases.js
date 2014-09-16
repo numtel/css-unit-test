@@ -35,7 +35,7 @@ Meteor.publish("TestCases", function () {
   if(this.userId==null){
     return [];
   };
-  return TestCases.find({owner: this.userId});
+  return TestCases.find({owner: this.userId}, {fields: {thumbnail: 0}});
 });
 
 Meteor.publish("TestHistory", function () {
@@ -179,6 +179,18 @@ Meteor.methods({
     loadTest(options.id).setData(options.data, function(error, result){
       if(error){
         throw error;
+      };
+      fut['return'](result);
+    });
+    return fut.wait();
+  },
+  getThumbnail: function(options){
+    var fut = new Future();
+    loadTest(options.id).getThumbnail(function(error, result){
+      if(error){
+        console.log(error.stack);
+        fut['return']('##ERROR##' + error);
+        return;
       };
       fut['return'](result);
     });

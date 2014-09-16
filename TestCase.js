@@ -215,6 +215,79 @@ TestCases.TestCase.prototype.getHTML = function(options, callback){
   };
 };
 
+TestCases.TestCase.prototype.getThumbnail = function(callback){
+  var that = this;
+  var thumbWidth = 240;
+  if(Meteor.isServer){
+    if(that.thumbnail){
+      if(callback){
+        callback.call(that, undefined, that.thumbnail);
+      };
+      return;
+    };
+    var phantomjs = Npm.require('phantomjs');
+    var shell = Npm.require('child_process');
+    var fs = Npm.require('fs');
+    var htmlFile = 'test-' + this._id + '.html';
+    this.getHTML({}, Meteor.bindEnvironment(function(error, result){
+      fs.writeFile(htmlFile, result, Meteor.bindEnvironment(function(err) {
+        if(err){
+          throw new Meteor.Error(500, 'Error writing HTML file');
+        }else{
+          var cmdOutput = '', commands = [];
+          var testWidth = that.widthsArray[0];
+          command = shell.spawn(phantomjs.path, 
+            ['assets/app/phantom/render.js', 
+             htmlFile, 
+             testWidth,
+             thumbWidth]);
+          commands.push(command);
+
+          ['stdout', 'stderr'].forEach(function(outVar){
+            command[outVar].on('data', Meteor.bindEnvironment(function(data){
+              cmdOutput += data;
+              commands.forEach(function(cmd){
+                cmd.kill('SIGKILL');
+              });
+            }));
+          });
+
+          command.on('exit', Meteor.bindEnvironment(function(code) {
+            if(cmdOutput.substr(0, 10) === 'data:image'){
+              that.setData({thumbnail: cmdOutput}, Meteor.bindEnvironment(function(error, result){
+                if(callback){
+                  if(error){
+                    callback.call(that, error);
+                  }else{
+                    callback.call(that, undefined, cmdOutput);
+                  };
+                };
+              }));
+            }else{
+              if(callback){
+                callback.call(that, cmdOutput, undefined);
+              };
+            };
+          }));
+        };
+      }));
+    }));
+  }else if(Meteor.isClient){
+    Meteor.call('getThumbnail', {id: this._id}, function(error, result){
+      if(typeof result === 'string' && result.substr(0,9) === '##ERROR##'){
+        if(callback){
+          callback.call(that, result.substr(9), undefined);
+        };
+      }else{
+        that.thumbnail = result;
+        if(callback){
+          callback.call(that, undefined, result);
+        };
+      };
+    });
+  };
+};
+
 TestCases.TestCase.prototype.extractStyles = function(callback){
   var that = this;
   if(Meteor.isServer){
@@ -278,7 +351,7 @@ TestCases.TestCase.prototype.extractStyles = function(callback){
     });
   }else if(Meteor.isClient){
     Meteor.call('extractStyles', {id: this._id}, function(error, result){
-      if(typeof result === 'string' && result.substr(0,9) === '##error##'){
+      if(typeof result === 'string' && result.substr(0,9) === '##ERROR##'){
         if(callback){
           callback.call(that, result.substr(9), undefined);
         };
@@ -305,7 +378,7 @@ TestCases.TestCase.prototype.setNormative = function(value, callback){
       var fut = new Future();
       this.extractStyles(Meteor.bindEnvironment(function(error, result){
         if(error){
-          fut['return']('##error##' + error);
+          fut['return']('##ERROR##' + error);
           return;
         };
         fut['return'](that.setNormative(result, callback));
@@ -322,10 +395,30 @@ TestCases.TestCase.prototype.setNormative = function(value, callback){
       value: value
     }
     TestNormatives.insert(insertData);
-    TestCases.update(that._id, {$set: {hasNormative: true}});
-    if(callback){
-      callback.call(that, undefined, insertData);
-    };
+
+
+    TestCases.update(that._id, {$set: {hasNormative: true}}, {}, function(error, result){
+      that.hasNormative = true;
+      if(error){
+        if(callback){
+          callback.call(that, error, undefined);
+          callback = undefined;
+        };
+        return;
+      };
+      //Refresh thumbnail
+      that.thumbnail = undefined;
+      that.getThumbnail(Meteor.bindEnvironment(function(error, result){
+        if(callback){
+          if(error){
+            callback.call(that, error);
+          }else{
+            callback.call(that, undefined, insertData);
+          };
+        };
+      }));
+    });
+
     return id;
   }else if(Meteor.isClient){
     Meteor.call('setNormative', {id: this._id, value: value}, function(error, result){
@@ -334,6 +427,7 @@ TestCases.TestCase.prototype.setNormative = function(value, callback){
           callback.call(that, result.substr(9), undefined);
         };
       }else{
+        that.hasNormative = true;
         if(callback){
           callback.call(that, undefined, result);
         };

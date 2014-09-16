@@ -12,6 +12,10 @@ UI.registerHelper('resetURL', function(){
   Template.list.setSelected();
 });
 
+UI.registerHelper('dashboard', function(){
+  return Template.list.dashboard();
+});
+
 UI.registerHelper('logThis', function(){
   console.log(this);
 });
@@ -31,10 +35,6 @@ UI.registerHelper('showDeleteDialog', function () {
 UI.registerHelper('createTestDialogOpen', function() {
   return Session.get('showModifyDialog') && 
          Session.get('modifyDialogType') === 'create';
-});
-
-UI.registerHelper('testSelected', function(){
-  return Session.get('selected');
 });
 
 UI.registerHelper('loading', function () {

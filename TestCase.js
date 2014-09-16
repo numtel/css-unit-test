@@ -172,6 +172,7 @@ TestCases.TestCase.prototype.getHTML = function(options, callback){
     head = [
      '<head>',
      head,
+     (that.remoteStyles ? '<base href="' + that.remoteStyles +'">' : ''),
      '<style>',
      '.steez-highlight-failure { outline: 2px solid #ff0 !important; }',
      '</style>',

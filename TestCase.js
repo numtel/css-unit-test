@@ -378,6 +378,10 @@ TestCases.TestCase.prototype.setNormative = function(value, callback){
       var fut = new Future();
       this.extractStyles(Meteor.bindEnvironment(function(error, result){
         if(error){
+          if(callback){
+            callback.call(that, error);
+            callback = undefined;
+          };
           fut['return']('##ERROR##' + error);
           return;
         };

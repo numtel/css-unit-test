@@ -45,7 +45,8 @@ h2 {
 }
 
 .welcome-header {
-  .gradient(#67ABE6, #C8E3FA);
+  .gradient(#111111, #0a497f);
+  /*.gradient(#67ABE6, #C8E3FA);*/
   color: #fff;
   position:relative;
   
@@ -68,6 +69,9 @@ h2 {
   }
   .attention {
     padding: 40px;
+    iframe {
+      margin: 0 auto;
+    }
   }
   .callout {
     font-size: 30px;
@@ -89,10 +93,18 @@ h2 {
       border:0;
       box-shadow: none;
     }
+    #login-other-options {
+      a { 
+        color:#fff;
+        &:hover {
+          color:#eee;
+        }
+      }
+    }
   }
 }
 .welcome-content {
-  background: url(drop-shadow-1.png) repeat-x top center;
+  background: url(drop-shadow-1.png) repeat-x 0 10px;
   color:#666;
   h2 {
     text-align:center;

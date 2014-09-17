@@ -6,14 +6,23 @@
     </div>
     <div class="banner container">
       <div class="col-md-8 attention">
-        <p class="callout">
-          Tired of overwritten rules?<br>
-          Have a CSS mess on your hands?
-        </p>
-        <p class="response">
-          Unit test your critical blocks of HTML,<br>
-          know immediately when any styles change!
-        </p>
+        {{#if showVideo}}
+          {{> introVideo}}
+        {{else}}
+          <p class="callout">
+            Tired of overwritten rules?<br>
+            Have a CSS mess on your hands?
+          </p>
+          <p class="response">
+            Unit test your critical blocks of HTML,<br>
+            know immediately when any styles change!
+          </p>
+          <p>
+            <a href="#" class="watch-video btn btn-lg btn-default">
+              Watch Introduction Video
+            </a>
+          </p>
+        {{/if}}
       </div>
       <ul class="col-md-4 signup">
       {{> loginButtons}}
@@ -38,7 +47,7 @@
         <h3>Open Source</h3>
         <p>Built with Meteor and available to run on your own infrastructure.</p>
         <p>
-          <a href="http://github.com/numtel/css-unit-test" title="View Project on GitHub" class="github">
+          <a href="http://github.com/numtel/css-unit-test">
             View Project on Github
           </a>
         </p>
@@ -52,3 +61,8 @@
   </div>
 </template>
 
+<template name="introVideo">
+  <iframe width="100%" height="410" 
+          src="//www.youtube.com/embed/oiHpD2qBBCc" 
+          frameborder="0" allowfullscreen></iframe>
+</template>

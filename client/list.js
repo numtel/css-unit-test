@@ -6,7 +6,7 @@ Template.list.renderSortable = function(){
         ui.item.parent().children().each(function(i){
           var item = $(this),
               id = item.children('a').attr('data-id');
-          TestCases.update(id, {$set: {rank: i}});
+          CssTests.update(id, {$set: {rank: i}});
         });
       }
     });
@@ -14,7 +14,7 @@ Template.list.renderSortable = function(){
 };
 
 Template.list.tests = function(){
-  return TestCases.find({}, {
+  return CssTests.find({}, {
     sort: {rank: 1},
     fields: {title: 1, hasNormative:1, lastPassed:1}
   });
@@ -36,7 +36,7 @@ Template.list.showTest = function(){
 };
 
 Template.list.empty = function(){
-  return TestCases.find().count() === 0;
+  return CssTests.find().count() === 0;
 };
 
 Template.list.dashboard = function(){
@@ -76,14 +76,13 @@ Template.list.renderThumbs = function(){
         return;
       };
       $thumb.addClass('loading');
-      var test = new TestCases.TestCase($link.attr('data-id'));
-      test.getThumbnail(function(error, result){
-        if(error){
-          throw error;
-          return;
-        };
-        $('<img>').attr('src', result)
-          .appendTo($thumb.removeClass('loading'));
+      ServerObject('CssTest', $link.attr('data-id'), function(error, instance){
+        if(error) throw error;
+        instance.getThumbnail(function(error, result){
+          if(error) throw error;
+          $('<img>').attr('src', result)
+            .appendTo($thumb.removeClass('loading'));
+        });
       });
     });
   }, 10);

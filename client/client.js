@@ -1,13 +1,3 @@
-TestCases = new Meteor.Collection('TestCases');
-TestHistory = new Meteor.Collection('TestHistory');
-
-Meteor.subscribe('TestHistory');
-
-var testCasesHandle;
-Deps.autorun(function () {
-  testCasesHandle = Meteor.subscribe('TestCases');
-});
-
 UI.registerHelper('resetURL', function(){
   Template.list.setSelected();
 });
@@ -38,7 +28,7 @@ UI.registerHelper('createTestDialogOpen', function() {
 });
 
 UI.registerHelper('loading', function () {
-  return !testCasesHandle.ready();
+  return !CssTestsHandle.ready();
 });
 
 Template.controls.events({

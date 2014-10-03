@@ -19,7 +19,7 @@ Template.modifyDialog.fields = function(){
      textarea: true,
      help: 'Place one HREF per line to include individual stylesheets. ' +
            '(e.g. http://example.com/css/main.css)'},
-    {key: 'testURL',
+    {key: 'testUrl',
      label: 'Test URL',
      text: true,
      help: '<a href="#" class="btn btn-default pull-right make-guess">' +
@@ -32,7 +32,7 @@ Template.modifyDialog.fields = function(){
      default: '1024',
      help: 'Please specify a comma separated list of pixel window widths to test.' +
            '<br>A new normative will be required if this field changes.'},
-    {key: 'fixtureHTML',
+    {key: 'fixtureHtml',
      label: 'Fixture HTML',
      textarea: true,
      help: 'Only include <code>&lt;body&gt;</code> or <code>&lt;html&gt;</code> ' +
@@ -78,10 +78,7 @@ Template.deleteDialog.test = function(){
   if(!curTestId){
     return;
   };
-  var test = new TestCases.TestCase(curTestId);
-  if(test.notFound){
-    return;
-  };
+  var test = CssTests.findOne(curTestId);
   return test;
 };
 
@@ -127,33 +124,36 @@ Template.modifyDialog.events({
 
 
     if(Template.modifyDialog.isCreate()){
-      Meteor.call('createTest', postData, function(error, result){
+      postData.owner = Meteor.userId();
+      ServerObject('CssTest', postData, function(error, result){
         $save.parent().removeClass('loading');
         $save.removeClass('disabled');
         if(error){
           Session.set('modifyDialogStatus', error.reason);
           $.scrollTo($form.find('.alert'), 400, {axis:'y', offset: -20});
         }else{
-          Template.list.setSelected(result);
+          Template.list.setSelected(result._id);
           Session.set("showModifyDialog", false);
           Session.set("modifyDialogType", 'edit');
           Session.set('modifyDialogStatus', undefined);
         };
       });
     }else{
-      postData._id = this._id;
-      Meteor.call('editTest', postData, function(error, result){
-        $save.parent().removeClass('loading');
-        $save.removeClass('disabled');
-        if(error){
-          Session.set('modifyDialogStatus', error.reason);
-          $.scrollTo($form.find('.alert'), 400, {axis:'y', offset: -20});
-        }else{
-          Session.set("showModifyDialog", false);
-          Session.set('modifyDialogStatus', 'Changes saved successfully.');
-          $.scrollTo($form.closest('.test-details').find('h2').eq(0), 
-                      400, {axis:'y', offset: -20});
-        };
+      ServerObject('CssTest', Session.get('selected'), function(error, instance){
+        if(error) throw error;
+        instance.update(postData, function(error, result){
+          $save.parent().removeClass('loading');
+          $save.removeClass('disabled');
+          if(error){
+            Session.set('modifyDialogStatus', error.reason);
+            $.scrollTo($form.find('.alert'), 400, {axis:'y', offset: -20});
+          }else{
+            Session.set("showModifyDialog", false);
+            Session.set('modifyDialogStatus', 'Changes saved successfully.');
+            $.scrollTo($form.closest('.test-details').find('h2').eq(0), 
+                        400, {axis:'y', offset: -20});
+          };
+        });
       });
     };
   },
@@ -183,7 +183,8 @@ Template.modifyDialog.statusSuccess = function(){
 Template.deleteDialog.events({
   'click .delete': function (event, template) {
     event.preventDefault();
-    TestCases.remove(this._id);
+    var test = Template.details.test();
+    test.remove();
     Session.set("showDeleteDialog", false);
   },
   'click .cancel': function (event) {

@@ -1,14 +1,37 @@
+var loadedTests = {};
+
 Template.details.test = function(){
-  var test = new TestCases.TestCase(Session.get("selected"));
-  if(test.notFound){
-    return;
+  var testId = Session.get('selected');
+  if(testId){
+    var sessionVar = 'loadedTest:' + testId;
+    var loaded = Session.get(sessionVar);
+    if(!loaded){
+      Session.set(sessionVar, 'loading');
+      ServerObject('CssTest', testId, function(error, result){
+        if(error) throw error;
+        loadedTests[testId] = result;
+        Session.set(sessionVar, 'ready');
+      });
+      return undefined;
+    };
   };
-  return test;
+  return CssTests.findOne(testId);
+};
+
+var testInstance = function(){
+  var testId = Session.get('selected');
+  if(testId){
+    var sessionVar = 'loadedTest:' + testId;
+    var loaded = Session.get(sessionVar);
+    if(loaded==='ready'){
+      return loadedTests[testId];
+    };
+  };
 };
 
 Template.details.historyItems = function(){
   var test = this;
-  return TestHistory.find({testCase: test._id}, {
+  return CssHistory.find({testCase: test._id}, {
           sort: {time: -1},
           limit: 100,
           fields: {passed: 1, time: 1, testCase: 1}
@@ -27,23 +50,31 @@ Template.details.testVar = function(data){
 
 Template.details.widthList = function(){
   var test = this;
-  var output = [];
-  this.widthsArray.forEach(function(width){
-    output.push({width:width, testId: test._id, first: output.length === 0});
-  });
-  return output;
+  var sessionVar = 'widthsArray:' + test._id;
+  var loaded = Session.get(sessionVar);
+  if(!loaded){
+    var instance = testInstance();
+    if(instance){
+      Session.set(sessionVar, instance.widthsArray); 
+    };
+  }else{
+    var output = [];
+    loaded.forEach(function(width){
+      output.push({width:width, testId: test._id, first: output.length === 0});
+    });
+    return output;
+  };
 };
 
 Template.details.fillFrame = function(){
   var test = this;
-  if(test.notFound){
-    return;
-  };
+  var instance = testInstance();
+  if(!instance) return;
   setTimeout(function(){
-    test.getHTML({}, function(error, result){
+    instance.getHtml(function(error, result){
       Session.set('settings-error-'+test._id, error);
       if(!error){
-        test.widthsArray.forEach(function(width){
+        instance.widthsArray.forEach(function(width){
           var frameId = 'test-frame-' + test._id + '-' + width,
               frame = document.getElementById(frameId);
           if(frame){
@@ -73,17 +104,21 @@ Template.details.runError = function(){
 Template.details.events({
   'click button.run': function(e){
     var test = this,
+        instance = testInstance(),
         $el = $(e.currentTarget);
+    if(!instance) return;
     $el.parent().addClass('loading').find('button').addClass('disabled');
-    this.run(function(error, result){
+    instance.run(function(error, result){
       $el.parent().removeClass('loading').find('button').removeClass('disabled');
       Session.set('run-error-' + test._id, error);
     });
   },
   'click button.extract': function(e){
     var test = this,
+        instance = testInstance(),
         $el = $(e.currentTarget),
         $parent = $el.parent();
+    if(!instance) return;
     $parent.addClass('loading').find('button').addClass('disabled');
     this.setNormative(function(error, result){
       $parent.removeClass('loading').find('button').removeClass('disabled');
@@ -147,8 +182,10 @@ Template.historyDetails.fullHistoryItem = function(){
     return objToArray(out);
   };
 
-  var testStatus = TestHistory.findOne(this._id),
-      test = Template.details.test();
+  var testStatus = CssHistory.findOne(this._id),
+      test = Template.details.test(),
+      instance = testInstance();
+  if(!instance) return;
   _.each(testStatus.failures, function(elements, width){
     testStatus.failures[width] = {elements: organizeBySelector(elements),
                                   width: width,
@@ -174,20 +211,20 @@ Template.historyDetails.fullHistoryItem = function(){
   });
   testStatus.failures = activeFailures;
 
-  test.loadNormative(testStatus.normative, function(error, result){
+  instance.loadNormative(testStatus.normative, function(error, result){
     if(error){
       throw error;
     };
     _.each(testStatus.failures, function(failure){
-      test.getHTML({
-        fixtureHTML: testStatus.fixtureHTML,
+      instance.getHtml({
+        fixtureHtml: testStatus.fixtureHtml,
         normativeValue: result[0].value[failure.width]
       },function(error, result){
         Session.set('expected-' + testStatus._id + '-' + failure.width, result);
       });
 
-      test.getHTML({
-        fixtureHTML: testStatus.fixtureHTML,
+      instance.getHtml({
+        fixtureHtml: testStatus.fixtureHtml,
         normativeValue: result[0].value[failure.width],
         diff:  failure.elements
       }, function(error, result){
